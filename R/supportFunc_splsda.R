@@ -1,3 +1,6 @@
+library(mixOmics)
+library(pROC)
+library(OptimalCutpoints)
 ## Predict new data with splsda model
 perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids.dist",
   "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10,
@@ -117,7 +120,7 @@ perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids
 }
 
 ## determine AUC from predictions and true labels
-tperformance = function(weights, trueLabels){
+tperformance = function(weights, trueLabels, direction){
   ## Determine optimal cut-off values and associated performance measures
   df = data.frame(prob = weights,
     status = model.matrix(~factor(as.character(trueLabels), levels = levels(trueLabels)))[, 2])
