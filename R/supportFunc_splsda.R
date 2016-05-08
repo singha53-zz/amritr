@@ -1,6 +1,6 @@
 ## Predict new data with splsda model
-perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids.dist", 
-  "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10, 
+perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids.dist",
+  "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10,
   progressBar = TRUE, near.zero.var = FALSE){
   X = object$X
   level.Y = object$names$Y
@@ -16,9 +16,9 @@ perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids
   for (k in 1:ncomp) {
     features[[k]] = NA
   }
-  method.predict = match.arg(method.predict, choices = c("all", 
+  method.predict = match.arg(method.predict, choices = c("all",
     "max.dist", "centroids.dist", "mahalanobis.dist"), several.ok = TRUE)
-  if (any(method.predict == "all")) 
+  if (any(method.predict == "all"))
     nmthdd = 3
   else nmthdd = length(method.predict)
   nzv = nearZeroVar(X)
@@ -37,15 +37,15 @@ perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids
   }
   if (validation == "Mfold") {
     if (is.list(folds)) {
-      if (length(folds) < 2 | length(folds) > n) 
+      if (length(folds) < 2 | length(folds) > n)
         stop("Invalid number of folds.")
-      if (length(unique(unlist(folds))) != n) 
+      if (length(unique(unlist(folds))) != n)
         stop("Invalid folds.")
       M = length(folds)
     }
     else {
-      if (is.null(folds) || !is.numeric(folds) || folds < 
-          2 || folds > n) 
+      if (is.null(folds) || !is.numeric(folds) || folds <
+          2 || folds > n)
         stop("Invalid number of folds.")
       else {
         M = round(folds)
@@ -60,32 +60,32 @@ perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids
   error.mat = array(0, dim = c(ncomp, nmthdd, M))
   score <- list()
   stop.user = FALSE
-  if (progressBar == TRUE) 
+  if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
   for (i in 1:M) {
-    if (progressBar == TRUE) 
+    if (progressBar == TRUE)
       setTxtProgressBar(pb, i/M)
     omit = folds[[i]]
-    if (length(omit) == 1) 
+    if (length(omit) == 1)
       stop.user = TRUE
     X.train = X[-omit, ]
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
-    spls.res = splsda(X.train, Y.train, ncomp, max.iter, 
+    spls.res = splsda(X.train, Y.train, ncomp, max.iter,
       tol, keepX = keepX, near.zero.var = near.zero.var)
     for (k in 1:ncomp) {
-      features[[k]] = c(unlist(features[[k]]), selectVar(spls.res, 
+      features[[k]] = c(unlist(features[[k]]), selectVar(spls.res,
         comp = k)$name)
     }
-    if (!is.null(spls.res$nzv$Position)) 
+    if (!is.null(spls.res$nzv$Position))
       X.test = X.test[, -spls.res$nzv$Position]
     Y.predict = predict(spls.res, X.test, method = method.predict)$class
     score[[i]] = predict(spls.res, X.test, method = method.predict)$predict
     error.mat[, , i] = sapply(Y.predict, error.fun, y = as.numeric(Y[omit]))
   }
-  if (stop.user == TRUE & validation == "Mfold") 
+  if (stop.user == TRUE & validation == "Mfold")
     stop("The folds value was set too high to perform cross validation. Choose validation = \"loo\" or set folds to a lower value")
-  if (progressBar == TRUE) 
+  if (progressBar == TRUE)
     cat("\n")
   res = apply(error.mat, 1:2, mean)
   rownames(res) = paste("ncomp", 1:ncomp, sep = " ")
@@ -93,10 +93,18 @@ perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids
   list.features = list()
   for (k in 1:ncomp) {
     remove.na = which(is.na(features[[k]]))
-    list.features[[k]] = sort(table(as.factor(features[[k]][-remove.na]))/M, 
+    list.features[[k]] = sort(table(as.factor(features[[k]][-remove.na]))/M,
       decreasing = TRUE)
   }
   names(list.features) = paste("comp", 1:ncomp)
+
+  ## re-organize scores
+  score <- lapply(1:ncomp, function(i){
+    do.call(rbind, lapply(score, function(j){
+      j[, , i]
+    }))
+  })
+
   result = list()
   result$error.rate = res
   result$features$stable = list.features
@@ -114,7 +122,7 @@ tperformance = function(weights, trueLabels){
   df = data.frame(prob = weights,
     status = model.matrix(~factor(as.character(trueLabels), levels = levels(trueLabels)))[, 2])
   roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE)
-  
+
   optimal.cutpoint.Youden <- optimal.cutpoints(X = "prob", status = "status", tag.healthy = 0, methods = "Youden",
     data = df, control = control.cutpoints(), ci.fit = FALSE,
     conf.level = 0.95, trace = FALSE, pop.prev = 0.5)
