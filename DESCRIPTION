@@ -2,7 +2,7 @@ Package: amritr
 Type: Package
 Title: Accessory Functions Used by Amrit Singh
 Version: 0.1.0
-Authors@R: person("First", "Last", email = "first.last@example.com",
+Authors@R: person("Amrit", "Singh", email = "Amrit.Singh@hli.ubc.ca",
                   role = c("aut", "cre"))
 Description: More about what it does (maybe more than one line)
 License: What license is it under?
