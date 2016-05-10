@@ -124,7 +124,7 @@ tperformance = function(weights, trueLabels, direction){
   ## Determine optimal cut-off values and associated performance measures
   df = data.frame(prob = weights,
     status = model.matrix(~factor(as.character(trueLabels), levels = levels(trueLabels)))[, 2])
-  roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE)
+  roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE, direction = direction)
 
   optimal.cutpoint.Youden <- optimal.cutpoints(X = "prob", status = "status", tag.healthy = 0, methods = "Youden",
     data = df, control = control.cutpoints(), ci.fit = FALSE,
