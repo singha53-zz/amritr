@@ -13,7 +13,7 @@ enet = function(X, Y, alpha, lambda=NULL){
     lambda = lambda
   }
   Coefficients <- coef(fit, s = lambda)
-  Active.Index <- which(Coefficients != 0)
+  Active.Index <- which(Coefficients[, 1] != 0)
   Active.Coefficients  <- Coefficients[Active.Index,]
   enet.panel <- names(Active.Coefficients)[-1]
   enet.panel.length <- length(enet.panel)
