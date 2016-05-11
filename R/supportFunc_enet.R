@@ -74,7 +74,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), folds = 10,
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
     enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha, lambda = NULL))
-    probs[[i]] <- predict(enet.res$fit, newx=X.test, s =  lambda, type='response')
+    probs[[i]] <- predict(enet.res$fit, newx=X.test, s =  lambda = enet.res$lambda, type='response')
   }
   probs <- unlist(probs)
   if (stop.user == TRUE & validation == "Mfold")
