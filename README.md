@@ -21,6 +21,7 @@ batch effect: "systematic 'batch effects' or non-biological differences that mak
 e.g. time, reagents used, chips --> e.g. in meta-analyses where samples from different studies are pooled
 
 ![](/Users/asingh/Documents/languages/R/amritr/figs/batchAdjustment.tiff)
+![](/Users/asingh/Documents/languages/R/amritr/figs/batchAdjustment.tiff)
 
   * Method 1: dChip software standardizes genes in each batch separately
   * Method 2: ComBat apply an EB method (useful for small sample sizes)
