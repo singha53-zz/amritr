@@ -1,4 +1,4 @@
-for personal use only
+taking apart code to understand the paper
 
 # Table of Contents
 1. [Batch correction](#batch-correction)
@@ -21,7 +21,6 @@ batch effect: "systematic 'batch effects' or non-biological differences that mak
 e.g. time, reagents used, chips --> e.g. in meta-analyses where samples from different studies are pooled
 
 ![](/Users/asingh/Documents/languages/R/amritr/figs/batchAdjustment.tiff)
-![](/Users/asingh/Documents/languages/R/amritr/figs/batchAdjustment.tiff)
 
   * Method 1: dChip software standardizes genes in each batch separately
   * Method 2: ComBat apply an EB method (useful for small sample sizes)
@@ -34,21 +33,37 @@ e.g. time, reagents used, chips --> e.g. in meta-analyses where samples from dif
 **ComBat procedure**
 Note: data is normalized and absent and noisy features have been filtered out
 
-The resulting dataset contains m batches with $n_i$ samples within batch *i* for *i* = 1, ..., m for gene *g* = 1, ..., G. Assume the model:
+The resulting dataset contains m batches with $n_i$ samples within batch *i* for *i* = 1, ..., m for feature *g* = 1, ..., G. Assume the model:
   
-  $Y_i_j_g$ = $/alpha$_g
+  $Y_{i,j,g}$ = $\alpha_g$ + $X$$\beta_g$ + $\gamma_{i,g}$ + $\delta_{i,g}$$\epsilon_{i,j,g}$
+  
+  $\epsilon$ ~ $N$(0, $\sigma^2_g$)
 
-```r
+*Step 1: Estimate model parameters*
+ 
+  + Visualize clustering with respect to batch
+  
+```R
+## load data
+library(bladderbatch)
+data(bladderdata)
+pheno = pData(bladderEset)
+exp = exprs(bladderEset)
+table(batch=pheno$batch, outcome=pheno$outcome)
 
+## demostrate effect of batch
+library(mixOmics)
+pcaX <- pca(t(exp), scale = TRUE, center = TRUE)
 
-
-
-
-library(sva)
-
-
-
+library(NMF)
+aheatmap(pcaX$x, annRow = list(batch = factor(pheno$batch), outcome = pheno$outcome))
 ```
+
+
+
+
+##### Batch-effect resources
+  1. Batch effect tutorial by Jeff Leek <http://jtleek.com/genstats/inst/doc/02_13_batch-effects.html>
 
 
 ### Surrogate Variable Analysis (sva)
