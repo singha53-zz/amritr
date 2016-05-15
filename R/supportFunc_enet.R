@@ -85,6 +85,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), folds = 10,
   result = list()
   result$nzvX = nzv$Position
   result$probs = probs
+  result$folds = folds
   method = "enet.mthd"
   result$meth = "enet.mthd"
   class(result) = c("perf", method)
