@@ -1,6 +1,10 @@
-## supportFunc_lm.R May 07, 2016
-library(nlme)
-
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 lm_singlePredictor = function(x, y, xlab, ylab, main, lim = NULL) {
     fit <- lm(y ~ x)
     est <- round(coef(summary(fit))["x", "Estimate"], 3)
@@ -19,6 +23,13 @@ lm_singlePredictor = function(x, y, xlab, ylab, main, lim = NULL) {
     }
 }
 
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 lme_interactionBinaryCont = function(x, y, binary, replicates,
     xlab, ylab, main, lim = NULL) {
     fit.lme <- summary(lme(y ~ x * binary, random = ~1 | replicates))$tTable

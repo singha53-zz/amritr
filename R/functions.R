@@ -1,157 +1,183 @@
-############################################################## functions.R 1) customTheme functions for ggplot2
-
-## load libraries
-library(dplyr)
-library(tidyr)
-
-# ---------------------------- 1) custom theme function
-# ----------------------------
-customTheme = function(sizeStripFont, xAngle, hjust, vjust, xSize, 
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
+customTheme = function(sizeStripFont, xAngle, hjust, vjust, xSize,
     ySize, xAxisSize, yAxisSize) {
-    theme(strip.background = element_rect(colour = "black", fill = "white", 
-        size = 1), strip.text.x = element_text(size = sizeStripFont), 
-        strip.text.y = element_text(size = sizeStripFont), axis.text.x = element_text(angle = xAngle, 
-            hjust = hjust, vjust = vjust, size = xSize, color = "black"), 
-        axis.text.y = element_text(size = ySize, color = "black"), 
-        axis.title.x = element_text(size = xAxisSize, color = "black"), 
-        axis.title.y = element_text(size = yAxisSize, color = "black"), 
+    theme(strip.background = element_rect(colour = "black", fill = "white",
+        size = 1), strip.text.x = element_text(size = sizeStripFont),
+        strip.text.y = element_text(size = sizeStripFont), axis.text.x = element_text(angle = xAngle,
+            hjust = hjust, vjust = vjust, size = xSize, color = "black"),
+        axis.text.y = element_text(size = ySize, color = "black"),
+        axis.title.x = element_text(size = xAxisSize, color = "black"),
+        axis.title.y = element_text(size = yAxisSize, color = "black"),
         panel.background = element_rect(fill = "white", color = "black"))
 }
 
 
 
-## normalize both p x n datasets
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 normalizelibSum = function(genExp) {
     lib.size <- colSums(genExp)
     genExpNorm <- t(log2(t(genExp + 0.5)/(lib.size + 1) * 1e+06))
     return(genExpNorm)
 }
 
-# Sample histograms for pxn datasets
-plotSampleHist = function(data = data, main = NULL, xlim = NULL, 
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
+plotSampleHist = function(data = data, main = NULL, xlim = NULL,
     ylim = NULL) {
     for (i in 1:ncol(data)) {
         idx <- data[, i] > -1
-        shist(data[idx, i], unit = 0.25, col = i, plotHist = FALSE, 
-            add = i != 1, main = main, ylim = ylim, xlim = xlim, 
+        shist(data[idx, i], unit = 0.25, col = i, plotHist = FALSE,
+            add = i != 1, main = main, ylim = ylim, xlim = xlim,
             xlab = expression("log"[2] ~ "cpm"))
     }
 }
 
 
-## annotate transcripts
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 annotateTranscripts = function(features, filter, mart) {
-    attr = c("description", "ucsc", "chromosome_name", "strand", 
+    attr = c("description", "ucsc", "chromosome_name", "strand",
         "hgnc_symbol", "refseq_mrna")
     if (filter %in% c("ucsc", "trinity")) {
         features = features
     }
     if (filter == "ensembl_gene_id") {
-        features <- unlist(lapply(strsplit(features, "\\."), 
+        features <- unlist(lapply(strsplit(features, "\\."),
             function(i) i[1]))
     }
-    
+
     gene <- rep(NA, length(features))
     if (filter %in% c("ucsc", "ensembl_gene_id")) {
-        hk.known <- getBM(attributes = attr, filters = filter, 
+        hk.known <- getBM(attributes = attr, filters = filter,
             values = features, mart = mart)$hgnc_symbol
         gene <- unique(hk.known)
     } else {
         trinityMapFile <- read.delim("/Users/asingh/Documents/Asthma/biomarkerPanels/data/discovery/rnaseq/asthma.trinity.blastx.outfmt6.txt")
-        trinityMapFile$Contig <- unlist(lapply(strsplit(as.character(trinityMapFile$query_id), 
+        trinityMapFile$Contig <- unlist(lapply(strsplit(as.character(trinityMapFile$query_id),
             "_"), function(i) paste(i[1], i[2], sep = "_")))
-        trinityMapFile$UniProt <- unlist(lapply(strsplit(unlist(lapply(strsplit(as.character(trinityMapFile$subject_id), 
+        trinityMapFile$UniProt <- unlist(lapply(strsplit(unlist(lapply(strsplit(as.character(trinityMapFile$subject_id),
             "\\|"), function(i) i[[2]])), split = "_"), function(x) x[1]))
-        trinityMapFile$GenSym <- unlist(lapply(strsplit(unlist(lapply(strsplit(as.character(trinityMapFile$subject_id), 
+        trinityMapFile$GenSym <- unlist(lapply(strsplit(unlist(lapply(strsplit(as.character(trinityMapFile$subject_id),
             "\\|"), function(i) i[[3]])), split = "_"), function(x) x[1]))
-        gene <- trinityMapFile$GenSym[trinityMapFile$query_id %in% 
+        gene <- trinityMapFile$GenSym[trinityMapFile$query_id %in%
             features]
     }
     gene
 }
 
 
-# Multiple plot function ggplot objects can be passed in ...,
-# or to plotlist (as a list of ggplot objects) - cols: Number
-# of columns in layout - layout: A matrix specifying the
-# layout. If present, 'cols' is ignored.  If the layout is
-# something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE), then
-# plot 1 will go in the upper left, 2 will go in the upper
-# right, and 3 will go all the way across the bottom.
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 multiplot <- function(..., plotlist = NULL, file, cols = 1, layout = NULL) {
     library(grid)
-    
+
     # Make a list from the ... arguments and plotlist
     plots <- c(list(...), plotlist)
-    
+
     numPlots = length(plots)
-    
+
     # If layout is NULL, then use 'cols' to determine layout
     if (is.null(layout)) {
         # Make the panel ncol: Number of columns of plots nrow:
         # Number of rows needed, calculated from # of cols
-        layout <- matrix(seq(1, cols * ceiling(numPlots/cols)), 
+        layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
             ncol = cols, nrow = ceiling(numPlots/cols))
     }
-    
+
     if (numPlots == 1) {
         print(plots[[1]])
-        
+
     } else {
         # Set up the page
         grid.newpage()
-        pushViewport(viewport(layout = grid.layout(nrow(layout), 
+        pushViewport(viewport(layout = grid.layout(nrow(layout),
             ncol(layout))))
-        
+
         # Make each plot, in the correct location
         for (i in 1:numPlots) {
             # Get the i,j matrix positions of the regions that contain
             # this subplot
             matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-            
-            print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row, 
+
+            print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
                 layout.pos.col = matchidx$col))
         }
     }
 }
 
-# ---------------------------- import nanoString .RCC files
-# ----------------------------
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 rccToDat = function(fileName) {
     lines <- data.frame(values = readLines(fileName))
-    dat <- suppressWarnings(separate(data = lines, col = values, 
-        sep = ",", into = c("CodeClass", "Name", "Accession", 
+    dat <- suppressWarnings(separate(data = lines, col = values,
+        sep = ",", into = c("CodeClass", "Name", "Accession",
             "Count")))
-    
+
     ind <- grep("<[A-Z]", dat$CodeClass)
     attr <- rep(NA, nrow(dat))
-    for (i in 1:length(ind)) attr[ind[i]:nrow(dat)] <- grep("<[A-Z]", 
+    for (i in 1:length(ind)) attr[ind[i]:nrow(dat)] <- grep("<[A-Z]",
         dat$CodeClass, value = TRUE)[i]
-    dat <- dat %>% mutate(CodeClass = paste(CodeClass, gsub(" ", 
+    dat <- dat %>% mutate(CodeClass = paste(CodeClass, gsub(" ",
         "", chartr("<>", "  ", attr)), sep = "_"), fileName = fileName)
     dat <- dat[-grep("<", dat$CodeClass), ]
     dat <- dat[!is.na(dat$Name), ]
-    
+
     ## split flow cell data (properties) and biological (gene)
     ## data
-    techDat <- dat[1:(grep("CodeClass", dat$CodeClass) - 1), 
-        ] %>% dplyr::select(-c(Accession:Count)) %>% spread(CodeClass, 
+    techDat <- dat[1:(grep("CodeClass", dat$CodeClass) - 1),
+        ] %>% dplyr::select(-c(Accession:Count)) %>% spread(CodeClass,
         Name)
-    bioDat <- dat[(grep("CodeClass", dat$CodeClass) + 1):nrow(dat), 
+    bioDat <- dat[(grep("CodeClass", dat$CodeClass) + 1):nrow(dat),
         ]
-    
+
     ## combine techDat and bioDat
     Dat <- full_join(techDat, bioDat, by = "fileName")
-    
+
     return(Dat)
 }
 
 
-
-# ---------------------------- zip_n from the purrr package
-# ----------------------------
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 zip_nPure = function(.x, .fields = NULL, .simplify = FALSE) {
-    if (length(.x) == 0) 
+    if (length(.x) == 0)
         return(list())
     if (is.null(.fields)) {
         if (is.null(names(.x[[1]]))) {
@@ -165,7 +191,7 @@ zip_nPure = function(.x, .fields = NULL, .simplify = FALSE) {
         }
     }
     out <- lapply(.fields, function(i) lapply(.x, .subset2, i))
-    if (.simplify) 
+    if (.simplify)
         out <- lapply(out, simplify_if_possible)
     out
-} 
+}

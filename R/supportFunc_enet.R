@@ -1,4 +1,10 @@
-
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 ## Elastic net
 enet = function(X, Y, alpha, lambda=NULL){
   library(glmnet)
@@ -20,6 +26,13 @@ enet = function(X, Y, alpha, lambda=NULL){
   return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha))
 }
 
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 runCV = function(X, Y, alpha, M, folds, progressBar){
   probs <- list()
   if (progressBar == TRUE)
@@ -41,7 +54,13 @@ runCV = function(X, Y, alpha, M, folds, progressBar){
   return(list(probs=probs, trueLabels=trueLabels, perf=perf))
 }
 
-## cross-validation Enet
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
   require(caret, quietly=TRUE)   ## require to make cv folds
   require(snow, quietly=TRUE)   ## require to parallelize

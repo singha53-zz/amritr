@@ -1,4 +1,11 @@
-
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
+## Predict new data with splsda model
 perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids.dist",
   "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10,
   progressBar = TRUE, near.zero.var = FALSE){

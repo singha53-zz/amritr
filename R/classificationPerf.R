@@ -1,5 +1,10 @@
-library(pROC)
-library(OptimalCutpoints)
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 ## determine AUC from predictions and true labels
 tperformance = function(weights, trueLabels, direction){
   ## Determine optimal cut-off values and associated performance measures
