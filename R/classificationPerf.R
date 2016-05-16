@@ -1,6 +1,5 @@
 library(pROC)
 library(OptimalCutpoints)
-
 ## determine AUC from predictions and true labels
 tperformance = function(weights, trueLabels, direction){
   ## Determine optimal cut-off values and associated performance measures
