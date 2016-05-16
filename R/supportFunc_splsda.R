@@ -1,19 +1,4 @@
-#' @title Prediction fuction for splsda
-#'
-#' @description predict scores for newdata
-#' @param object splsda model
-#' @param method.predict type of distance measure to use: "max.dist", "centroids.dist", "mahalanobis.dist" or "all"
-#' @param validation Either an M-fold cross-valiadtion where M is an integr between 1-n (total number of samples)
-#' @param folds Number of folds, used only if validation = "Mfold"
-#' @param progressBar display progress bar (TRUE) or Not (FALSE)
-#' @import mixOmics
-#' @seealso NULL
-#' @return NULL
-#' @aliases NULL
-#' @examples \dontrun{
-#'
-#'}
-## Predict new data with splsda model
+
 perf.splsda2 = function(object, method.predict = c("all", "max.dist", "centroids.dist",
   "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10,
   progressBar = TRUE, near.zero.var = FALSE){
