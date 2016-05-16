@@ -3,9 +3,9 @@
 \name{perf.splsda2}
 \title{Prediction fuction for splsda}
 \usage{
-\method{perf}{splsda2}(object, method.predict = c("all", "max.dist",
-  "centroids.dist", "mahalanobis.dist"), validation = c("Mfold", "loo"),
-  folds = 10, progressBar = TRUE, near.zero.var = FALSE)
+perf.splsda2(object, method.predict = c("all", "max.dist", "centroids.dist",
+  "mahalanobis.dist"), validation = c("Mfold", "loo"), folds = 10,
+  progressBar = TRUE, near.zero.var = FALSE)
 }
 \arguments{
 \item{object}{splsda model}
