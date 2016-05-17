@@ -39,16 +39,18 @@ fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose 
       rhoarray = exp(seq(log(0.1), log(3), length = 100))
     }
   }
-  cl <- makeCluster(threads, type = "SOCK")
-  clusterExport(cl, c("rhoarray", "S", "extendedBIC", "dat"))
-  clusterEvalQ(cl, library(glasso))
-  BIC <- unlist(parLapply(cl, rhoarray, function(x){
-    fit.gl1 = glasso(S, rho = x)
-    fit.gl2 = glasso(S, rho = x, w.init = fit.gl1$w,
+
+  cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
+  parallel::clusterExport(cl, varlist=c("rhoarray", "S", "extendedBIC", "dat"), envir=environment())
+  parallel::clusterEvalQ(cl, library(glasso))
+  BIC <- unlist(parLapply(cl, rhoarray, function(rhoarrayi, S, dat){
+    fit.gl1 = glasso(S, rho = rhoarrayi)
+    fit.gl2 = glasso(S, rho = rhoarrayi, w.init = fit.gl1$w,
       wi.init = fit.gl1$wi)
     extendedBIC(gamma = 0, omegahat = fit.gl2$wi, S = S, n = nrow(dat))
-  }))
-  stopCluster(cl)
+  }, S, dat))
+  parallel::stopCluster(cl)
+
   rho = rhoarray[which.min(BIC)]
   fit.gl1 = glasso(S, rho = rho)
   fit.gl2 = glasso(S, rho = rho, w.init = fit.gl1$w, wi.init = fit.gl1$wi)
