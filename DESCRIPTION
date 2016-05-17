@@ -14,6 +14,7 @@ Imports:
   glmnet (>= 2.0-5),
   mixOmics (>= 5.2.0),
   OptimalCutpoints (>= 1.1-3),
+  parallel (>= 3.2.3),
   pROC (>= 1.8),
   snow (>= 0.4-1),
   tidyr (>= 0.4.1)

@@ -61,33 +61,31 @@ runCV = function(X, Y, alpha, M, folds, progressBar){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
-  require(caret, quietly=TRUE)   ## require to make cv folds
-  require(snow, quietly=TRUE)   ## require to parallelize
+perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
+  threads = 4, progressBar = TRUE)
+{
+  require(caret, quietly = TRUE)
   library(dplyr)
   X = object$X
   Y = object$Y
   n = nrow(X)
   alpha = object$alpha
-
   if (validation == "Mfold") {
-   folds <- lapply(1 : iter, function(i) createFolds(1:n, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(1:n,
+      k = M))
+    require(parallel)
+    cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
+    parallel::clusterExport(cl, varlist=c("runCV", "enet", "X", "Y", "alpha", "M", "folds", "progressBar"), envir=environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, M, progressBar){
+      runCV(X=X, Y=Y, alpha=alpha, M=M, folds = foldsi, progressBar=progressBar)
+    }, X, Y, alpha, M, progressBar) %>% amritr::zip_nPure()
+    parallel::stopCluster(cl)
 
-   # parallelize each iteration
-   cl <- makeCluster(threads, type = "SOCK")
-   clusterExport(cl, c("runCV", "enet"))
-   clusterExport(cl, c("X", "Y", "alpha", "M", "folds", "progressBar"))
-   cv <- parLapply(cl, folds, function(x){
-     runCV(X, Y, alpha, M, folds=x, progressBar)
-   }) %>% amritr::zip_nPure()
-   stopCluster(cl)
-  }
-  else {
+  } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- runCV(X, Y, alpha, M, folds, progressBar)
   }
-
   result = list()
   result$folds = folds
   result$probs = cv$probs
