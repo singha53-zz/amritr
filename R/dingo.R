@@ -71,7 +71,7 @@ fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose 
     if (verbose)
       cat("Bootstrap scoring is started at", date(), "\n")
     boot.fit = fast.scoring.boot(stddat = stddat, z = x, Omega = Omega,
-      A = fit.g$A, B = fit.g$B, boot.B = B, verbose = verbose)
+      A = fit.g$A, B = fit.g$B, boot.B = B, verbose = verbose, threads = threads)
     if (verbose)
       cat("Bootstrap scoring is done at", date(), "\n")
     return(list(genepair = boot.fit$genepair, levels.x = boot.fit$levels.z,
@@ -100,7 +100,7 @@ fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose 
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-fast.scoring.boot = function (stddat, z, Omega, A, B, boot.B = 100, verbose = T)
+fast.scoring.boot = function (stddat, z, Omega, A, B, boot.B = 100, verbose = T, threads)
 {
   p = ncol(stddat)
   n = nrow(stddat)
@@ -114,13 +114,13 @@ fast.scoring.boot = function (stddat, z, Omega, A, B, boot.B = 100, verbose = T)
   diag(P) = 0
   tY.org = stddat %*% (II - t(P))
 
-  cl <- makeCluster(threads, type = "SOCK")
-  clusterExport(cl, c("n", "tY.org", "z", "levels.z", "P", "w.upper", "calculateDiff"))
-  clusterEvalQ(cl, library(DINGO))
-  bootList <- parLapply(cl, 1:boot.B, function(x){
+  cl <- parallel::makeCluster(threads, type = "SOCK")
+  parallel::clusterExport(cl, varlist=c("n", "tY.org", "z", "levels.z", "P", "w.upper", "calculateDiff"), envir=environment())
+  parallel::clusterEvalQ(cl, library(DINGO))
+  bootList <- parLapply(cl, 1:boot.B, function(x, n, tY.org, z, levels.z, P, w.upper){
     tryCatch(calculateDiff(n, tY.org, z, levels.z, P, w.upper), error = function(e) NA)
-  })
-  stopCluster(cl)
+  }, n, tY.org, z, levels.z, P, w.upper)
+  parallel::stopCluster(cl)
   boot.diff <- t(na.omit(do.call(rbind, bootList)))
 
   genepair = data.frame(gene1 = colnames(stddat)[w.mat[, 1]],
