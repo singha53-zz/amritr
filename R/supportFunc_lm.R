@@ -59,6 +59,13 @@ lme_interactionBinaryCont = function(x, y, binary, replicates,
     }
 }
 
+#' table of classification performances
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param weights are the predicted scores/probablities of test data
+#' @param trubeLabels are the true labels associated with the test data
+#' @param direction = "auto", ">", "<"
+#' @export
 ## Descriptive Statistics
 descriptiveStat = function(demo, groups, variables){
   library(dplyr)
