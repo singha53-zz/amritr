@@ -4,7 +4,8 @@
 \alias{fast.scoring.boot}
 \title{table of classification performances}
 \usage{
-fast.scoring.boot(stddat, z, Omega, A, B, boot.B = 100, verbose = T)
+fast.scoring.boot(stddat, z, Omega, A, B, boot.B = 100, verbose = T,
+  threads)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}

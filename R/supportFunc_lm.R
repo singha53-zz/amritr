@@ -59,3 +59,25 @@ lme_interactionBinaryCont = function(x, y, binary, replicates,
     }
 }
 
+## Descriptive Statistics
+descriptiveStat = function(demo, groups, variables){
+  library(dplyr)
+  library(tidyr)
+  library(broom)
+
+  X <- demo[, c(variables, groups), drop = FALSE]
+  colnames(X) <- c(variables, "Group")
+
+  lvls <- levels(X$Group)
+
+  meanSD <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable, Group) %>%
+    summarise(MEAN = mean(Value, na.rm = TRUE), SD = sd(Value, na.rm = TRUE))
+
+  pval <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable) %>%
+    nest() %>%
+    mutate(model = purrr::map(data, ~ lm(Value ~ Group, data = .))) %>%
+    unnest(model %>% purrr::map(broom::tidy)) %>%
+    group_by(Variable) %>% slice(2)
+
+  return(list(meanSD=meanSD, pval=pval))
+}
