@@ -3,6 +3,7 @@
 export(annotateTranscripts)
 export(calculateDiff)
 export(customTheme)
+export(descriptiveStat)
 export(enet)
 export(extendedBIC)
 export(fast.dingo)

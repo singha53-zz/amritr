@@ -66,7 +66,6 @@ lme_interactionBinaryCont = function(x, y, binary, replicates,
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-## Descriptive Statistics
 descriptiveStat = function(demo, groups, variables){
   library(dplyr)
   library(tidyr)
