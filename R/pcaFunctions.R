@@ -15,7 +15,7 @@ compVar = function(demo, eset, groups, variables, ncomp = 10){
 
   pval <- do.call(rbind, lapply(variables, function(i){
     apply(pcaX$x, 2, function(j){
-      coef(summary(lm(as.numeric(j) ~ demographics[, i])))[2, "Pr(>|t|)"]
+      coef(summary(lm(as.numeric(j) ~ demo[, i])))[2, "Pr(>|t|)"]
     })
   }))
   rownames(pval) <- variables
