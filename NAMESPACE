@@ -2,6 +2,7 @@
 
 export(annotateTranscripts)
 export(calculateDiff)
+export(compVar)
 export(customTheme)
 export(descriptiveStat)
 export(enet)

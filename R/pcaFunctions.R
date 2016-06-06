@@ -7,6 +7,10 @@
 #' @export
 compVar = function(demo, eset, groups, variables, ncomp = 10){
   library(RColorBrewer)
+  library(dplyr)
+  library(tidyr)
+  library(dplyr)
+
   pcaX <- prcomp(eset, scale. = TRUE, center = TRUE)
 
   pval <- do.call(rbind, lapply(variables, function(i){
