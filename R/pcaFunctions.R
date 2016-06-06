@@ -9,7 +9,7 @@ compVar = function(demo, eset, groups, variables, ncomp = 10){
   library(RColorBrewer)
   library(dplyr)
   library(tidyr)
-  library(dplyr)
+  library(ggplot2)
 
   pcaX <- prcomp(eset, scale. = TRUE, center = TRUE)
 
