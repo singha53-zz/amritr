@@ -5,7 +5,7 @@
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-compVar = function(demo, eset, groups, variables, ncomp = 10){
+compVar = function(demo, eset, variables, ncomp = 10){
   library(RColorBrewer)
   library(dplyr)
   library(tidyr)
