@@ -66,24 +66,39 @@ lme_interactionBinaryCont = function(x, y, binary, replicates,
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-descriptiveStat = function(demo, groups, variables){
+descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NULL){
   library(dplyr)
   library(tidyr)
   library(broom)
 
-  X <- demo[, c(variables, groups), drop = FALSE]
-  colnames(X) <- c(variables, "Group")
+  if(all(paired)){
+    X <- demo[, c(variables, groups, pairing), drop = FALSE]
+    colnames(X) <- c(variables, "Group", "Pairing")
+    lvls <- levels(X$Group)
+    meanSD <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% group_by(Variable,
+      Group) %>% summarise(MEAN = mean(Value, na.rm = TRUE),
+        SD = sd(Value, na.rm = TRUE))
 
-  lvls <- levels(X$Group)
+    pval0 <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% group_by(Variable) %>%
+      nest() %>% mutate(model = purrr::map(data, ~lme(Value ~
+          Group, random = ~ 1 | Pairing, data = .)))
+    pval <- do.call(rbind, lapply(pval0$model, function(i){summary(i)$tTable[2,]})) %>%
+      data.frame %>% mutate(Variable = variables, term = paste("Group", lvls[2]),
+        BH.FDR = p.adjust(p.value, "BH"))
+  } else {
+    X <- demo[, c(variables, groups), drop = FALSE]
+    colnames(X) <- c(variables, "Group")
+    lvls <- levels(X$Group)
+    meanSD <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable,
+      Group) %>% summarise(MEAN = mean(Value, na.rm = TRUE),
+        SD = sd(Value, na.rm = TRUE))
 
-  meanSD <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable, Group) %>%
-    summarise(MEAN = mean(Value, na.rm = TRUE), SD = sd(Value, na.rm = TRUE))
+    pval <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable) %>%
+      nest() %>% mutate(model = purrr::map(data, ~lm(Value ~
+          Group, data = .))) %>% unnest(model %>% purrr::map(broom::tidy)) %>%
+      group_by(Variable) %>% slice(2)
+    pval$BH.FDR <- p.adjust(pval$p.value, "BH")
+  }
 
-  pval <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable) %>%
-    nest() %>%
-    mutate(model = purrr::map(data, ~ lm(Value ~ Group, data = .))) %>%
-    unnest(model %>% purrr::map(broom::tidy)) %>%
-    group_by(Variable) %>% slice(2)
-
-  return(list(meanSD=meanSD, pval=pval))
+  return(list(meanSD = meanSD, pval = pval))
 }
