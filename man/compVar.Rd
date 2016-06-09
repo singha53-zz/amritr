@@ -4,7 +4,7 @@
 \alias{compVar}
 \title{table of classification performances}
 \usage{
-compVar(demo, eset, groups, variables, ncomp = 10)
+compVar(demo, eset, variables, ncomp = 10)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}

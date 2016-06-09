@@ -75,8 +75,8 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
     X <- demo[, c(variables, groups, pairing), drop = FALSE]
     colnames(X) <- c(variables, "Group", "Pairing")
     lvls <- levels(X$Group)
-    meanSD <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% group_by(Variable,
-      Group) %>% summarise(MEAN = mean(Value, na.rm = TRUE),
+    meanSD <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% dplyr::group_by(Variable,
+      Group) %>% dplyr::summarise(MEAN = mean(Value, na.rm = TRUE),
         SD = sd(Value, na.rm = TRUE))
 
     pval0 <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% group_by(Variable) %>%
@@ -89,8 +89,8 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
     X <- demo[, c(variables, groups), drop = FALSE]
     colnames(X) <- c(variables, "Group")
     lvls <- levels(X$Group)
-    meanSD <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable,
-      Group) %>% summarise(MEAN = mean(Value, na.rm = TRUE),
+    meanSD <- X %>% gather(Variable, Value, -Group) %>% dplyr::group_by(Variable,
+      Group) %>% dplyr::summarise(MEAN = mean(Value, na.rm = TRUE),
         SD = sd(Value, na.rm = TRUE))
 
     pval <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable) %>%

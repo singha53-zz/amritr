@@ -4,7 +4,7 @@
 \alias{descriptiveStat}
 \title{table of classification performances}
 \usage{
-descriptiveStat(demo, groups, variables)
+descriptiveStat(demo, groups, variables, paired = FALSE, pairing = NULL)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
