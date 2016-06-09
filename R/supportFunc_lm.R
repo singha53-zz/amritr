@@ -79,8 +79,8 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
       Group) %>% dplyr::summarise(MEAN = mean(Value, na.rm = TRUE),
         SD = sd(Value, na.rm = TRUE))
 
-    pval0 <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% group_by(Variable) %>%
-      nest() %>% mutate(model = purrr::map(data, ~lme(Value ~
+    pval0 <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% dplyr::group_by(Variable) %>%
+      nest() %>% dplyr::mutate(model = purrr::map(data, ~lme(Value ~
           Group, random = ~ 1 | Pairing, data = .)))
     pval <- do.call(rbind, lapply(pval0$model, function(i){summary(i)$tTable[2,]})) %>%
       data.frame %>% mutate(Variable = variables, term = paste("Group", lvls[2]),
@@ -93,8 +93,8 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
       Group) %>% dplyr::summarise(MEAN = mean(Value, na.rm = TRUE),
         SD = sd(Value, na.rm = TRUE))
 
-    pval <- X %>% gather(Variable, Value, -Group) %>% group_by(Variable) %>%
-      nest() %>% mutate(model = purrr::map(data, ~lm(Value ~
+    pval <- X %>% gather(Variable, Value, -Group) %>% dplyr::group_by(Variable) %>%
+      nest() %>% dplyr::mutate(model = purrr::map(data, ~lm(Value ~
           Group, data = .))) %>% unnest(model %>% purrr::map(broom::tidy)) %>%
       group_by(Variable) %>% slice(2)
     pval$BH.FDR <- p.adjust(pval$p.value, "BH")
