@@ -80,10 +80,11 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
         SD = sd(Value, na.rm = TRUE))
 
     pval0 <- X %>% gather(Variable, Value, -c(Group, Pairing)) %>% dplyr::group_by(Variable) %>%
-      nest() %>% dplyr::mutate(model = purrr::map(data, ~lme(Value ~
-          Group, random = ~ 1 | Pairing, data = .)))
+      nest() %>% dplyr::mutate(model = purrr::map(data,
+        ~tryCatch(lme(Value ~ Group, random = ~ 1 | Pairing, data = .), error = function(e) NA)
+        ))
     pval <- do.call(rbind, lapply(pval0$model, function(i){
-      tryCatch(summary(i)$tTable[2,], error = function(e) NA)
+      summary(i)$tTable[2,]
         })) %>%
       data.frame %>% mutate(Variable = variables, term = paste("Group", lvls[2]),
         BH.FDR = p.adjust(p.value, "BH"))
