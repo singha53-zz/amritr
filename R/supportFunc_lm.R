@@ -84,7 +84,7 @@ descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NU
         ~tryCatch(lme(Value ~ Group, random = ~ 1 | Pairing, data = .), error = function(e) NA)
         ))
     pval <- do.call(rbind, lapply(pval0$model, function(i){
-      summary(i)$tTable[2,]
+      tryCatch(summary(i)$tTable[2,], error = function(e) NA)
         })) %>%
       data.frame %>% mutate(Variable = variables, term = paste("Group", lvls[2]),
         BH.FDR = p.adjust(p.value, "BH"))
