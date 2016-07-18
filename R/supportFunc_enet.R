@@ -6,24 +6,41 @@
 #' @param direction = "auto", ">", "<"
 #' @export
 ## Elastic net
-enet = function(X, Y, alpha, lambda=NULL){
+enet = function(X, Y, alpha, lambda=NULL, family){
   library(glmnet)
 
   # Run Elastic net classifier
-  fit <- glmnet(X, Y, family="binomial", alpha = alpha)
-  cv.fit <- cv.glmnet(X, Y, family="binomial")
-  if(is.null(lambda)){
-    set.seed(1)
-    lambda = cv.fit$lambda.min
+  if(family == "binomial"){
+    fit <- glmnet(X, Y, family="binomial", alpha = alpha)
+    cv.fit <- cv.glmnet(X, Y, family="binomial")
+    if(is.null(lambda)){
+      set.seed(1)
+      lambda = cv.fit$lambda.min
+    } else {
+      lambda = lambda
+    }
+    Coefficients <- coef(fit, s = lambda)
+    Active.Index <- which(Coefficients[, 1] != 0)
+    Active.Coefficients  <- Coefficients[Active.Index,]
+    enet.panel <- names(Active.Coefficients)[-1]
+    enet.panel.length <- length(enet.panel)
   } else {
-    lambda = lambda
+    fit <- glmnet(X, Y, family="multinomial", alpha = alpha, type.multinomial = "grouped")
+    cv.fit <- cv.glmnet(X, Y, family="multinomial")
+    if(is.null(lambda)){
+      set.seed(1)
+      lambda = cv.fit$lambda.min
+    } else {
+      lambda = lambda
+    }
+    Coefficients <- coef(fit, s = lambda)
+    Active.Index <- which(Coefficients[[1]][, 1] != 0)
+    Active.Coefficients  <- Coefficients[[1]][Active.Index,]
+    enet.panel <- names(Active.Coefficients)[-1]
+    enet.panel.length <- length(enet.panel)
   }
-  Coefficients <- coef(fit, s = lambda)
-  Active.Index <- which(Coefficients[, 1] != 0)
-  Active.Coefficients  <- Coefficients[Active.Index,]
-  enet.panel <- names(Active.Coefficients)[-1]
-  enet.panel.length <- length(enet.panel)
-  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha))
+
+  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family))
 }
 
 #' table of classification performances
@@ -33,8 +50,8 @@ enet = function(X, Y, alpha, lambda=NULL){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-runCV = function(X, Y, alpha, M, folds, progressBar){
-  probs <- list()
+runCV = function(X, Y, alpha, M, folds, progressBar, family){
+  probs <- predictResponseList <- list()
   if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
   for (i in 1:M) {
@@ -44,14 +61,33 @@ runCV = function(X, Y, alpha, M, folds, progressBar){
     X.train = X[-omit, ]
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
-    enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha, lambda = NULL))
+    enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha, lambda = NULL, family = family))
     probs[[i]] <- predict(enet.res$fit, newx=X.test, s = enet.res$lambda, type='response')
+    predictResponseList[[i]] <- predict(enet.res$fit, newx=X.test, s = enet.res$lambda, type='class')
   }
-  probs <- unlist(probs)
-  trueLabels = Y[unlist(folds)]
-  library(pROC); library(OptimalCutpoints);
-  perf <- amritr::tperformance(weights = probs, trueLabels = trueLabels, direction = "auto")
-  return(list(probs=probs, trueLabels=trueLabels, perf=perf))
+  predictResponse <- unlist(predictResponseList)
+
+  ## Error rate, AUC
+  if(family == "binomial"){
+    probs <- unlist(probs)
+    trueLabels = Y[unlist(folds)]
+    library(pROC); library(OptimalCutpoints);
+    perf <- amritr::tperformance(weights = probs, trueLabels = trueLabels, direction = "auto")
+
+  } else {
+    ## Error rate
+    trueLabels = Y[unlist(folds)]
+    mat <- table(trueLabels, predictResponse)
+    mat2 <- mat
+    diag(mat2) <- 0
+    classError <- colSums(mat2)/colSums(mat)
+    ber <- mean(classError)
+    er <- sum(mat2)/sum(mat)
+    perf <- c(classError, ber, er)
+    names(perf) <- c(names(classError), "Overall.ER", "Overall.BER")
+  }
+
+  return(list(probs=probs, trueLabels=trueLabels, perf=perf, predictResponse=predictResponse))
 }
 
 #' table of classification performances
@@ -70,21 +106,22 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   Y = object$Y
   n = nrow(X)
   alpha = object$alpha
+  family = object$family
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) createFolds(1:n,
       k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist=c("runCV", "enet", "X", "Y", "alpha", "M", "folds", "progressBar"), envir=environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, M, progressBar){
-      runCV(X=X, Y=Y, alpha=alpha, M=M, folds = foldsi, progressBar=progressBar)
-    }, X, Y, alpha, M, progressBar) %>% amritr::zip_nPure()
+    parallel::clusterExport(cl, varlist=c("runCV", "enet", "X", "Y", "alpha", "M", "folds", "progressBar", "family"), envir=environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, M, progressBar, family){
+      runCV(X=X, Y=Y, alpha=alpha, M=M, folds = foldsi, progressBar=progressBar, family = family)
+    }, X, Y, alpha, M, progressBar, family) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
 
   } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- runCV(X, Y, alpha, M, folds, progressBar)
+    cv <- runCV(X, Y, alpha, M, folds, progressBar, family = family)
   }
   result = list()
   result$folds = folds
