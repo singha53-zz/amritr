@@ -59,6 +59,8 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
       perfTest <- c(classError, ber, er)
       names(perfTest) <- c(names(classError), "Overall.ER", "Overall.BER")
     }
+  } else {
+    perfTest <- NA
   }
 
   return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family, perfTest=perfTest))
