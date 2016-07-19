@@ -6,7 +6,7 @@
 #' @param direction = "auto", ">", "<"
 #' @export
 ## Elastic net
-enet = function(X, Y, alpha, lambda=NULL, family){
+enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
   library(glmnet)
 
   # Run Elastic net classifier
@@ -40,8 +40,30 @@ enet = function(X, Y, alpha, lambda=NULL, family){
     enet.panel.length <- length(enet.panel)
   }
 
-  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family))
+  ## assess panel performance using test data if available
+  if(!is.null(X.test)){
+    library(pROC)
+    library(OptimalCutpoints)
+    probs <- predict(fit, newx = X.test, s = lambda, type = "response")
+    predictResponse <- unlist(predict(fit, newx = X.test, s = lambda, type = "class"))
+
+    if(family == "binomial"){
+      perfTest <- amritr::tperformance(weights = probs, trueLabels = Y.test, direction = "auto")
+    } else {
+      mat <- table(Y.test, predictResponse)
+      mat2 <- mat
+      diag(mat2) <- 0
+      classError <- colSums(mat2)/colSums(mat)
+      ber <- mean(classError)
+      er <- sum(mat2)/sum(mat)
+      perfTest <- c(classError, ber, er)
+      names(perfTest) <- c(names(classError), "Overall.ER", "Overall.BER")
+    }
+  }
+
+  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family, perfTest=perfTest))
 }
+
 
 #' table of classification performances
 #'
@@ -123,11 +145,17 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     M = n
     cv <- runCV(X, Y, alpha, M, folds, progressBar, family = family)
   }
+
+  ## Summarise performance results
+  perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
+    gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
+    dplyr::summarise(Mean = mean(Err), SD = sd(Err))
+
   result = list()
   result$folds = folds
   result$probs = cv$probs
   result$trueLabels = cv$trueLabels
-  result$perf = cv$perf
+  result$perf = perf
   method = "enet.mthd"
   result$meth = "enet.mthd"
   class(result) = c("perf", method)

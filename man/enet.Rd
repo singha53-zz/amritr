@@ -4,7 +4,7 @@
 \alias{enet}
 \title{table of classification performances}
 \usage{
-enet(X, Y, alpha, lambda = NULL)
+enet(X, Y, alpha, lambda = NULL, family)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
