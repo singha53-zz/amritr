@@ -5,7 +5,6 @@
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-## Ensemble method
 ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
   result <- mapply(function(X.train, X.test){
     enet(X.train, Y.train, alpha, lambda=NULL, X.test=X.test, Y.test=Y.test, family = "multinomial")
@@ -41,7 +40,6 @@ ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-## Ensemble cross-validation
 ensembleCV = function(X, Y, alpha, M, folds, progressBar){
   J <- length(X)
   ### Start: Training samples (X.training and Y.training) and Test samples (X.test / Y.test)
@@ -97,7 +95,6 @@ ensembleCV = function(X, Y, alpha, M, folds, progressBar){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-## ensemble enet iter x m-fold cross-validation
 perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, threads = threads, progressBar = TRUE){
   require(caret, quietly = TRUE)
   library(dplyr)
