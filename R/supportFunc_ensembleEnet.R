@@ -27,7 +27,7 @@ ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
   temp=table(pred=Y.vote, truth=Y.test)
   diag(temp) <- 0
   error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
-  names(error) <- c(names(error)[1:nlevels(Y.test)], "Overall.ER", "Overall.BER")
+  names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
 
   return(list(result=result, Y.vote=Y.vote, error=error, X.train=X.train, Y.train=Y.train, alpha=alpha))
 }
@@ -83,7 +83,7 @@ ensembleCV = function(X, Y, alpha, M, folds, progressBar){
   temp=table(pred=Y.vote, truth=unlist(Y.test))
   diag(temp) <- 0
   error = c(colSums(temp)/summary(Y), sum(temp)/length(Y), mean(colSums(temp)/summary(Y)))
-  names(error) <- c(names(error)[1:nlevels(Y)], "Overall.ER", "Overall.BER")
+  names(error) <- c(names(error)[1:nlevels(Y)], "ER", "BER")
 
   return(list(error=error))
 }

@@ -54,10 +54,10 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
       mat2 <- mat
       diag(mat2) <- 0
       classError <- colSums(mat2)/colSums(mat)
-      ber <- mean(classError)
       er <- sum(mat2)/sum(mat)
-      perfTest <- c(classError, ber, er)
-      names(perfTest) <- c(names(classError), "Overall.ER", "Overall.BER")
+      ber <- mean(classError)
+      perfTest <- c(classError, er, ber)
+      names(perfTest) <- c(names(classError), "ER", "BER")
     }
   } else {
     perfTest <- predictResponse <- NA
@@ -105,10 +105,10 @@ runCV = function(X, Y, alpha, M, folds, progressBar, family){
     mat2 <- mat
     diag(mat2) <- 0
     classError <- colSums(mat2)/colSums(mat)
-    ber <- mean(classError)
     er <- sum(mat2)/sum(mat)
-    perf <- c(classError, ber, er)
-    names(perf) <- c(names(classError), "Overall.ER", "Overall.BER")
+    ber <- mean(classError)
+    perf <- c(classError, er, ber)
+    names(perf) <- c(names(classError), "ER", "BER")
   }
 
   return(list(probs=probs, trueLabels=trueLabels, perf=perf, predictResponse=predictResponse))
