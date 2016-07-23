@@ -5,7 +5,6 @@
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-## Random Forest
 rforest = function(X, Y, X.test=NULL, Y.test=NULL){
   library(randomForest)
 
