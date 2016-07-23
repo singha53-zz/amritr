@@ -93,7 +93,7 @@ perf.rf = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist=c("rfCV", "rf", "X", "Y", "M", "folds", "progressBar"), envir=environment())
+    parallel::clusterExport(cl, varlist=c("rfCV", "rforest", "X", "Y", "M", "folds", "progressBar"), envir=environment())
     cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, M, progressBar){
       rfCV(X=X, Y=Y, M=M, folds = foldsi, progressBar=progressBar)
     }, X, Y, M, progressBar) %>% amritr::zip_nPure()
