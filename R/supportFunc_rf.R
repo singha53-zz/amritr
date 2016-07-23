@@ -6,7 +6,7 @@
 #' @param direction = "auto", ">", "<"
 #' @export
 ## Random Forest
-rf = function(X, Y, X.test=NULL, Y.test=NULL){
+rforest = function(X, Y, X.test=NULL, Y.test=NULL){
   library(randomForest)
 
   # Run random forest classifier
@@ -55,7 +55,7 @@ rfCV = function(X, Y, M, folds, progressBar){
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
     colnames(X.test) <- paste("Feature", 1:ncol(X.test), sep=".")
-    rf.res = suppressWarnings(rf(X=X.train, Y=Y.train))
+    rf.res = suppressWarnings(rforest(X=X.train, Y=Y.train))
     probs[[i]] <- predict(rf.res$fit, X.test, type='response')
     predictResponseList[[i]] <- predict(rf.res$fit, X.test, type='class')
   }
