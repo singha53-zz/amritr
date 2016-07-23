@@ -132,8 +132,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   alpha = object$alpha
   family = object$family
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(1:n,
-      k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist=c("runCV", "enet", "X", "Y", "alpha", "M", "folds", "progressBar", "family"), envir=environment())
