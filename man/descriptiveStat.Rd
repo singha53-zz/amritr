@@ -2,18 +2,22 @@
 % Please edit documentation in R/supportFunc_lm.R
 \name{descriptiveStat}
 \alias{descriptiveStat}
-\title{table of classification performances}
+\title{Calculate desriptive statistics for each group and compare with lm() or lme()}
 \usage{
 descriptiveStat(demo, groups, variables, paired = FALSE, pairing = NULL)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{demo}{is an (nxp) dataset}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{groups}{specifies the column name of a binary variable in demo}
 
-\item{direction}{= "auto", ">", "<"}
+\item{variables}{is a vector of column names to be compared between the 2 groups}
+
+\item{paired}{boolean (T/F) - default = FALSE (repeated measures or not)}
+
+\item{pairing}{is a column name that containing the pairing information}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+takes in data and determines the summary statistics (Mean & SD) and also compares the levels of the groups (binary) variable
 }
 
