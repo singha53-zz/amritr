@@ -59,12 +59,14 @@ lme_interactionBinaryCont = function(x, y, binary, replicates,
     }
 }
 
-#' table of classification performances
+#' Calculate desriptive statistics for each group and compare with lm() or lme()
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
+#' takes in data and determines the summary statistics (Mean & SD) and also compares the levels of the groups (binary) variable
+#' @param demo is an (nxp) dataset
+#' @param groups specifies the column name of a binary variable in demo
+#' @param variables is a vector of column names to be compared between the 2 groups
+#' @param paired boolean (T/F) - default = FALSE (repeated measures or not)
+#' @param pairing is a column name that containing the pairing information
 #' @export
 descriptiveStat = function(demo, groups, variables, paired = FALSE, pairing = NULL){
   library(dplyr)
