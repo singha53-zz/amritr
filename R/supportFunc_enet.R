@@ -134,24 +134,28 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
-    cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist=c("runCV", "enet", "X", "Y", "alpha", "M", "folds", "progressBar", "family"), envir=environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, M, progressBar, family){
-      runCV(X=X, Y=Y, alpha=alpha, M=M, folds = foldsi, progressBar=progressBar, family = family)
+    cl <- parallel::makeCluster(mc <- getOption("cl.cores",
+      threads))
+    parallel::clusterExport(cl, varlist = c("runCV", "enet",
+      "X", "Y", "alpha", "M", "folds", "progressBar", "family"),
+      envir = environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi,
+      X, Y, alpha, M, progressBar, family) {
+      runCV(X = X, Y = Y, alpha = alpha, M = M, folds = foldsi,
+        progressBar = progressBar, family = family)
     }, X, Y, alpha, M, progressBar, family) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
 
-  } else {
+    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>% gather(ErrName,
+      Err) %>% dplyr::group_by(ErrName) %>% dplyr::summarise(Mean = mean(Err),
+        SD = sd(Err))
+  }
+  else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- runCV(X, Y, alpha, M, folds, progressBar, family = family)
+    perf <- cv$perf
   }
-
-  ## Summarise performance results
-  perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
-    gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
-    dplyr::summarise(Mean = mean(Err), SD = sd(Err))
-
   result = list()
   result$folds = folds
   result$probs = cv$probs
@@ -162,14 +166,3 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   class(result) = c("perf", method)
   return(invisible(result))
 }
-
-
-
-#library(mixOmics)
-#data(srbct)
-#X <- srbct$gene[srbct$class %in% c("EWS", "RMS"),]
-#Y <- droplevels(srbct$class[srbct$class %in% c("EWS", "RMS")])
-
-#model <- enet(X, Y, alpha=0.5, lambda=NULL)
-#cv <- perf.enet(model, validation = "Mfold", M = 5, iter = 10, progressBar = TRUE)
-
