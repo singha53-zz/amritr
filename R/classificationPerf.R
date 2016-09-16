@@ -8,7 +8,7 @@
 ## determine AUC from predictions and true labels
 tperformance = function(weights, trueLabels, direction){
   ## Determine optimal cut-off values and associated performance measures
-  df = data.frame(prob = weights,
+  df = data.frame(prob = as.numeric(weights),
     status = model.matrix(~factor(as.character(trueLabels), levels = levels(trueLabels)))[, 2])
   roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE, direction = direction)
 
