@@ -48,7 +48,7 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
     predictResponse <- unlist(predict(fit, newx = X.test, s = lambda, type = "class"))
 
     if(family == "binomial"){
-      perfTest <- amritr::tperformance(weights = probs, trueLabels = Y.test, direction = "auto")
+      perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = Y.test, direction = "auto")
     } else {
       mat <- table(Y.test, predictResponse)
       mat2 <- mat
