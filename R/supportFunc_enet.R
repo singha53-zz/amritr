@@ -60,10 +60,10 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
       names(perfTest) <- c(names(classError), "ER", "BER")
     }
   } else {
-    perfTest <- predictResponse <- NA
+    perfTest <- predictResponse <- probs <- NA
   }
 
-  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family, perfTest=perfTest, predictResponse=predictResponse))
+  return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel, lambda = lambda, alpha = alpha, family = family, probs = probs, perfTest=perfTest, predictResponse=predictResponse))
 }
 
 
