@@ -24,7 +24,9 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
     Active.Coefficients  <- Coefficients[Active.Index,]
     enet.panel <- names(Active.Coefficients)[-1]
     enet.panel.length <- length(enet.panel)
-  } else {
+  }
+
+  if(family == "multinomial") {
     fit <- glmnet(X, Y, family="multinomial", alpha = alpha, type.multinomial = "grouped")
     cv.fit <- cv.glmnet(X, Y, family="multinomial")
     if(is.null(lambda)){
