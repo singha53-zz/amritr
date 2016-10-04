@@ -14,7 +14,6 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
     fit <- glmnet(X, Y, family="binomial", alpha = alpha)
     cv.fit <- cv.glmnet(X, Y, family="binomial")
     if(is.null(lambda)){
-      set.seed(1)
       lambda = cv.fit$lambda.min
     } else {
       lambda = lambda
