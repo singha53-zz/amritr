@@ -151,8 +151,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     perf <- do.call(rbind, cv$perf) %>% as.data.frame %>% gather(ErrName,
       Err) %>% dplyr::group_by(ErrName) %>% dplyr::summarise(Mean = mean(Err),
         SD = sd(Err))
-  }
-  else {
+  } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- runCV(X, Y, alpha, M, folds, progressBar, family = family)
