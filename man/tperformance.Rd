@@ -4,14 +4,14 @@
 \alias{tperformance}
 \title{table of classification performances}
 \usage{
-tperformance(weights, trueLabels, direction)
+tperformance(weights, trueLabels)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
 
-\item{direction}{= "auto", ">", "<"}
-
 \item{trubeLabels}{are the true labels associated with the test data}
+
+\item{direction}{= "auto", ">", "<"}
 }
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
