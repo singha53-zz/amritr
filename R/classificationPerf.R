@@ -6,11 +6,11 @@
 #' @param direction = "auto", ">", "<"
 #' @export
 ## determine AUC from predictions and true labels
-tperformance = function(weights, trueLabels, direction){
+tperformance = function(weights, trueLabels){
   ## Determine optimal cut-off values and associated performance measures
   df = data.frame(prob = as.numeric(weights),
     status = model.matrix(~factor(as.character(trueLabels), levels = levels(trueLabels)))[, 2])
-  roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE, direction = direction)
+  roc.score = roc(response = as.character(trueLabels), predictor = weights, plot = TRUE, percent = TRUE, na.rm =TRUE, direction = "greater")
 
   optimal.cutpoint.Youden <- optimal.cutpoints(X = "prob", status = "status", tag.healthy = 0, methods = "Youden",
     data = df, control = control.cutpoints(), ci.fit = FALSE,
