@@ -29,7 +29,6 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
     fit <- glmnet(X, Y, family="multinomial", alpha = alpha, type.multinomial = "grouped")
     cv.fit <- cv.glmnet(X, Y, family="multinomial")
     if(is.null(lambda)){
-      set.seed(1)
       lambda = cv.fit$lambda.min
     } else {
       lambda = lambda
