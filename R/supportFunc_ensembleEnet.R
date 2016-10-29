@@ -96,14 +96,14 @@ ensembleCV = function(X, Y, alpha, M, folds, progressBar){
 #' @param direction = "auto", ">", "<"
 #' @export
 perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, threads = threads, progressBar = TRUE){
-  require(caret, quietly = TRUE)
+
   library(dplyr)
   X <- object$X.train
   Y = object$Y.train
   n = length(Y)
   alpha = object$alpha
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist=c("ensembleCV", "ensembleEnet", "enet", "X", "Y", "alpha", "M", "folds", "progressBar"), envir=environment())

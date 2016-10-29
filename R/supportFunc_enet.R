@@ -124,15 +124,16 @@ runCV = function(X, Y, alpha, M, folds, progressBar, family){
 perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 {
-  require(caret, quietly = TRUE)
+
   library(dplyr)
+  library(tidyr)
   X = object$X
   Y = object$Y
   n = nrow(X)
   alpha = object$alpha
   family = object$family
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores",
       threads))

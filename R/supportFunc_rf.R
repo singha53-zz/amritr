@@ -84,13 +84,13 @@ rfCV = function(X, Y, M, folds, progressBar){
 perf.rf = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 {
-  require(caret, quietly = TRUE)
+
   library(dplyr)
   X = object$X
   Y = object$Y
   n = nrow(X)
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist=c("rfCV", "rforest", "X", "Y", "M", "folds", "progressBar"), envir=environment())
