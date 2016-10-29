@@ -15,7 +15,7 @@ tperformance = function(weights, trueLabels){
   optimal.cutpoint.Youden <- optimal.cutpoints(X = "prob", status = "status", tag.healthy = 0, methods = "Youden",
     data = df, control = control.cutpoints(), ci.fit = FALSE,
     conf.level = 0.95, trace = FALSE, pop.prev = 0.5)
-  optimalValues <- round(c(summary(optimal.cutpoint.Youden)$p.table$Global$Youden[[1]][1:5, ], roc.score$auc), 2)
+  optimalValues <- round(c(summary(optimal.cutpoint.Youden)$p.table$Global$Youden[[1]][1:5, ], roc.score$auc/100), 2)
   names(optimalValues) <- c(names(optimalValues)[-length(names(optimalValues))], "AUC")
   optimalValues
 }
