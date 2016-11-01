@@ -74,7 +74,8 @@ enet = function(X, Y, alpha, lambda=NULL, family, X.test=NULL, Y.test=NULL){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-runCV = function(X, Y, alpha, M, folds, progressBar, family){
+runCV = function (X, Y, alpha, lambda, M, folds, progressBar, family)
+{
   probs <- predictResponseList <- list()
   if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
@@ -85,21 +86,22 @@ runCV = function(X, Y, alpha, M, folds, progressBar, family){
     X.train = X[-omit, ]
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
-    enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha, lambda = NULL, family = family))
-    probs[[i]] <- predict(enet.res$fit, newx=X.test, s = enet.res$lambda, type='response')
-    predictResponseList[[i]] <- predict(enet.res$fit, newx=X.test, s = enet.res$lambda, type='class')
+    enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha,
+      lambda = lambda, family = family))
+    probs[[i]] <- predict(enet.res$fit, newx = X.test, s = lambda,
+      type = "response")
+    predictResponseList[[i]] <- predict(enet.res$fit, newx = X.test,
+      s = lambda, type = "class")
   }
   predictResponse <- unlist(predictResponseList)
-
-  ## Error rate, AUC
-  if(family == "binomial"){
+  if (family == "binomial") {
     probs <- unlist(probs)
     trueLabels = Y[unlist(folds)]
-    library(pROC); library(OptimalCutpoints);
+    library(pROC)
+    library(OptimalCutpoints)
     perf <- amritr::tperformance(weights = probs, trueLabels = trueLabels)
-
-  } else {
-    ## Error rate
+  }
+  else {
     trueLabels = Y[unlist(folds)]
     mat <- table(trueLabels, predictResponse)
     mat2 <- mat
@@ -110,8 +112,8 @@ runCV = function(X, Y, alpha, M, folds, progressBar, family){
     perf <- c(classError, er, ber)
     names(perf) <- c(names(classError), "ER", "BER")
   }
-
-  return(list(probs=probs, trueLabels=trueLabels, perf=perf, predictResponse=predictResponse))
+  return(list(probs = probs, trueLabels = trueLabels, perf = perf,
+    predictResponse = predictResponse))
 }
 
 #' table of classification performances
@@ -124,7 +126,6 @@ runCV = function(X, Y, alpha, M, folds, progressBar, family){
 perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 {
-
   library(dplyr)
   library(tidyr)
   X = object$X
@@ -132,28 +133,30 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   n = nrow(X)
   alpha = object$alpha
   family = object$family
+  lambda = object$lambda
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) caret::createFolds(Y,
+      k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores",
       threads))
     parallel::clusterExport(cl, varlist = c("runCV", "enet",
-      "X", "Y", "alpha", "M", "folds", "progressBar", "family"),
+      "X", "Y", "alpha", "lambda", "M", "folds", "progressBar", "family"),
       envir = environment())
     cv <- parallel::parLapply(cl, folds, function(foldsi,
-      X, Y, alpha, M, progressBar, family) {
-      runCV(X = X, Y = Y, alpha = alpha, M = M, folds = foldsi,
+      X, Y, alpha, lambda, M, progressBar, family) {
+      runCV(X = X, Y = Y, alpha = alpha, lambda=lambda, M = M, folds = foldsi,
         progressBar = progressBar, family = family)
-    }, X, Y, alpha, M, progressBar, family) %>% amritr::zip_nPure()
+    }, X, Y, alpha, lambda, M, progressBar, family) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
-
-    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>% gather(ErrName,
-      Err) %>% dplyr::group_by(ErrName) %>% dplyr::summarise(Mean = mean(Err),
-        SD = sd(Err))
-  } else {
+    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
+      gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
+      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
+  }
+  else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- runCV(X, Y, alpha, M, folds, progressBar, family = family)
+    cv <- runCV(X, Y, alpha, lambda, M, folds, progressBar, family = family)
     perf <- cv$perf
   }
   result = list()
