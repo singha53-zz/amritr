@@ -4,7 +4,7 @@
 \alias{runCV}
 \title{table of classification performances}
 \usage{
-runCV(X, Y, alpha, M, folds, progressBar, family)
+runCV(X, Y, alpha, lambda, M, folds, progressBar, family)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
