@@ -4,7 +4,7 @@
 \alias{ensembleEnet}
 \title{table of classification performances}
 \usage{
-ensembleEnet(X.train, Y.train, alpha, lambda = NULL, X.test, Y.test)
+ensembleEnet(X.train, Y.train, alpha, lambda, X.test, Y.test)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
