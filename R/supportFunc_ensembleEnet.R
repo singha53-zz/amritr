@@ -5,9 +5,9 @@
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
+ensembleEnet = function(X.train, Y.train, alpha, lambda, X.test, Y.test){
   result <- mapply(function(X.train, X.test){
-    enet(X.train, Y.train, alpha, lambda=NULL, X.test=X.test, Y.test=Y.test, family = "multinomial")
+    enet(X = X.train, Y = Y.train, alpha = alpha, lambda = lambda, family = "multinomial", X.test=X.test, Y.test=Y.test)
   }, X.train = X.train, X.test = X.test, SIMPLIFY = FALSE)
 
   predConcat <- do.call(cbind, lapply(result, function(i){
