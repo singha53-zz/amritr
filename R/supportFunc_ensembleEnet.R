@@ -17,21 +17,20 @@ ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
   Y.vote <- apply(predConcat, 1, function(z){
     temp = table(z)
     if (length(names(temp)[temp == max(temp)]) > 1){
-      NA
+      "zz"
     } else {
       names(temp)[temp == max(temp)]
     }
   })
 
   ## Compare error rates
-  temp=table(pred=Y.vote, truth=Y.test)
+  temp=table(pred=factor(Y.vote, levels = c(levels(Y.test), "zz")), truth=unlist(Y.test)[unlist(folds)])
   diag(temp) <- 0
   error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
   names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
 
   return(list(result=result, Y.vote=Y.vote, error=error, X.train=X.train, Y.train=Y.train, alpha=alpha))
 }
-
 
 #' table of classification performances
 #'
@@ -40,7 +39,7 @@ ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
 #' @param trubeLabels are the true labels associated with the test data
 #' @param direction = "auto", ">", "<"
 #' @export
-ensembleCV = function(X, Y, alpha, M, folds, progressBar){
+ensembleCV = function(X, Y, alpha, lambda, M, folds, progressBar){
   J <- length(X)
   ### Start: Training samples (X.training and Y.training) and Test samples (X.test / Y.test)
   assign("X.training", NULL, pos = 1); assign("Y.training", NULL, pos = 1)
@@ -59,7 +58,7 @@ ensembleCV = function(X, Y, alpha, M, folds, progressBar){
       setTxtProgressBar(pb, i/M)
 
     result <- mapply(function(X.train, X.test){
-      enet(X.train, Y.training[[i]], alpha, lambda=NULL, X.test=X.test, Y.test=Y.test[[i]], family = "multinomial")
+      enet(X.train, Y.training[[i]], alpha, lambda=lambda, X.test=X.test, Y.test=Y.test[[i]], family = "multinomial")
     }, X.train = X.training[[i]], X.test = X.test[[i]], SIMPLIFY = FALSE)
 
     predConcatList[[i]] <- do.call(cbind, lapply(result, function(i){
@@ -73,14 +72,14 @@ ensembleCV = function(X, Y, alpha, M, folds, progressBar){
   Y.vote <- apply(predConcat, 1, function(z){
     temp = table(z)
     if (length(names(temp)[temp == max(temp)]) > 1){
-      NA
+      "zz"
     } else {
       names(temp)[temp == max(temp)]
     }
   })
 
   ## Compare error rates
-  temp=table(pred=Y.vote, truth=unlist(Y.test))
+  temp=table(pred=factor(Y.vote, levels = c(levels(Y), "zz")), truth=unlist(Y)[unlist(folds)])
   diag(temp) <- 0
   error = c(colSums(temp)/summary(Y), sum(temp)/length(Y), mean(colSums(temp)/summary(Y)))
   names(error) <- c(names(error)[1:nlevels(Y)], "ER", "BER")
@@ -102,20 +101,21 @@ perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, thread
   Y = object$Y.train
   n = length(Y)
   alpha = object$alpha
+  lambda = object$lambda
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist=c("ensembleCV", "ensembleEnet", "enet", "X", "Y", "alpha", "M", "folds", "progressBar"), envir=environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, M, progressBar){
-      ensembleCV(X=X, Y=Y, alpha=alpha, M=M, folds = foldsi, progressBar=progressBar)
-    }, X, Y, alpha, M, progressBar) %>% amritr::zip_nPure()
+    parallel::clusterExport(cl, varlist=c("ensembleCV", "ensembleEnet", "enet", "X", "Y", "alpha", "lambda", "M", "folds", "progressBar"), envir=environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi, X, Y, alpha, lambda, M, progressBar){
+      ensembleCV(X=X, Y=Y, alpha=alpha, lambda=lambda, M=M, folds = foldsi, progressBar=progressBar)
+    }, X, Y, alpha, lambda, M, progressBar) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
 
   } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- ensembleCV(X, Y, alpha, M, folds, progressBar)
+    cv <- ensembleCV(X, Y, alpha, lambda, M, folds, progressBar)
   }
 
   ## Summarise performance results
