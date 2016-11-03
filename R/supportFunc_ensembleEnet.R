@@ -24,7 +24,7 @@ ensembleEnet = function(X.train, Y.train, alpha, lambda=NULL, X.test, Y.test){
   })
 
   ## Compare error rates
-  temp=table(pred=factor(Y.vote, levels = c(levels(Y.test), "zz")), truth=unlist(Y.test)[unlist(folds)])
+  temp=table(pred=factor(Y.vote, levels = c(levels(Y.test), "zz")), truth=unlist(Y.test))
   diag(temp) <- 0
   error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
   names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
