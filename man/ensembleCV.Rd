@@ -4,7 +4,7 @@
 \alias{ensembleCV}
 \title{table of classification performances}
 \usage{
-ensembleCV(X, Y, alpha, M, folds, progressBar)
+ensembleCV(X, Y, alpha, lambda, M, folds, progressBar)
 }
 \arguments{
 \item{weights}{are the predicted scores/probablities of test data}
