@@ -12,15 +12,19 @@
 #' @export
 ## Elastic net
 enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
-  Y.test = NULL, filter = "p.value", topranked = 50) {
-  library(limma); library(glmnet);
-  if(filter == "p.value"){
+  Y.test = NULL, filter = "p.value", topranked = 50)
+{
+  library(limma)
+  library(glmnet)
+  if (filter == "none") {
+    X <- X
+  }
+  if (filter == "p.value") {
     design <- model.matrix(~Y)
     fit <- eBayes(lmFit(t(X), design))
-    top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
+    top <- topTable(fit, coef = 2, adjust.method = "BH",
+      n = nrow(fit))
     X <- X[, rownames(top)[1:topranked]]
-  } else {
-    X <- X
   }
 
   if (family == "binomial") {
@@ -101,16 +105,85 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
 #' @param filter = "none" or "p.value"
 #' @param topranked = 50 (top number of features to select and build a classifier)
 #' @export
-enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked) {
-  library(limma); library(glmnet);
-  if(filter == "p.value"){
-    design <- model.matrix(~Y)
-    fit <- eBayes(lmFit(t(X), design))
-    top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
-    X <- X[, rownames(top)[1:topranked]]
-  } else {
+perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
+  threads = 4, progressBar = TRUE)
+{
+  library(dplyr)
+  library(tidyr)
+  X = object$X
+  Y = object$Y
+  n = nrow(X)
+  alpha = object$alpha
+  family = object$family
+  lambda = object$lambda
+  filter = object$filter
+  topranked = object$topranked
+  if (validation == "Mfold") {
+    folds <- lapply(1:iter, function(i) caret::createFolds(Y,
+      k = M))
+    require(parallel)
+    cl <- parallel::makeCluster(mc <- getOption("cl.cores",
+      threads))
+    parallel::clusterExport(cl, varlist = c("enetCV", "enet",
+      "X", "Y", "alpha", "lambda", "M", "folds", "progressBar",
+      "family", "filter", "topranked"), envir = environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi,
+      X, Y, alpha, lambda, M, progressBar, family, filter,
+      topranked) {
+      enetCV(X = X, Y = Y, alpha = alpha, lambda = lambda,
+        M = M, folds = foldsi, progressBar = progressBar,
+        family = family, filter = filter, topranked = topranked)
+    }, X, Y, alpha, lambda, M, progressBar, family, filter,
+      topranked) %>% amritr::zip_nPure()
+    parallel::stopCluster(cl)
+    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
+      gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
+      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
+  }
+  else {
+    folds = split(1:n, rep(1:n, length = n))
+    M = n
+    cv <- enetCV(X, Y, alpha, lambda, M, folds, progressBar,
+      family, filter, topranked)
+    perf <- cv$perf
+  }
+  result = list()
+  result$folds = folds
+  result$probs = cv$probs
+  result$trueLabels = cv$trueLabels
+  result$perf = perf
+  method = "enet.mthd"
+  result$meth = "enet.mthd"
+  class(result) = c("perf", method)
+  return(invisible(result))
+}
+
+#' interal function (enet cross-validation)
+#'
+#' build an elastic net classification panel
+#' @param object - elastic net classifier
+#' @param validation - Mfold or LOOCV
+#' @param M - # of folds
+#' @param iter - number of times to repeat cross-validation
+#' @param threads - number of cpus (each cross-valiation scheme performed on a separate node)
+#' @param progressBar - show progressbar (TRUE/FALE)
+#' @export
+enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
+  filter, topranked)
+{
+  library(limma)
+  library(glmnet)
+  if (filter == "none") {
     X <- X
   }
+  if (filter == "p.value") {
+    design <- model.matrix(~Y)
+    fit <- eBayes(lmFit(t(X), design))
+    top <- topTable(fit, coef = 2, adjust.method = "BH",
+      n = nrow(fit))
+    X <- X[, rownames(top)[1:topranked]]
+  }
+
   probs <- predictResponseList <- list()
   if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
@@ -149,62 +222,4 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family, filter, t
   }
   return(list(probs = probs, trueLabels = trueLabels, perf = perf,
     predictResponse = predictResponse))
-}
-
-#' table of classification performances
-#'
-#' build an elastic net classification panel
-#' @param object - elastic net classifier
-#' @param validation - Mfold or LOOCV
-#' @param M - # of folds
-#' @param iter - number of times to repeat cross-validation
-#' @param threads - number of cpus (each cross-valiation scheme performed on a separate node)
-#' @param progressBar - show progressbar (TRUE/FALE)
-#' @export
-perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
-  threads = 4, progressBar = TRUE) {
-  library(dplyr)
-  library(tidyr)
-  X = object$X
-  Y = object$Y
-  n = nrow(X)
-  alpha = object$alpha
-  family = object$family
-  lambda = object$lambda
-  filter = object$filter
-  topranked = object$topranked
-  if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
-    require(parallel)
-    cl <- parallel::makeCluster(mc <- getOption("cl.cores",
-      threads))
-    parallel::clusterExport(cl, varlist = c("enetCV", "enet",
-      "X", "Y", "alpha", "lambda", "M", "folds", "progressBar",
-      "family", "filter", "topranked"), envir = environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi,
-      X, Y, alpha, lambda, M, progressBar, family, filter, topranked) {
-      enetCV(X = X, Y = Y, alpha = alpha, lambda = lambda,
-        M = M, folds = foldsi, progressBar = progressBar,
-        family = family, filter = filter, topranked = topranked)
-    }, X, Y, alpha, lambda, M, progressBar, family, filter, topranked) %>% amritr::zip_nPure()
-    parallel::stopCluster(cl)
-    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
-      gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
-      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
-  }
-  else {
-    folds = split(1:n, rep(1:n, length = n))
-    M = n
-    cv <- enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked)
-    perf <- cv$perf
-  }
-  result = list()
-  result$folds = folds
-  result$probs = cv$probs
-  result$trueLabels = cv$trueLabels
-  result$perf = perf
-  method = "enet.mthd"
-  result$meth = "enet.mthd"
-  class(result) = c("perf", method)
-  return(invisible(result))
 }

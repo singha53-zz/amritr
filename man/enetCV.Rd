@@ -2,32 +2,24 @@
 % Please edit documentation in R/supportFunc_enet.R
 \name{enetCV}
 \alias{enetCV}
-\title{cross-validation function for elastic net panel}
+\title{interal function (enet cross-validation)}
 \usage{
 enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked)
 }
 \arguments{
-\item{X}{nxp matrix - training dataset}
+\item{M}{- # of folds}
 
-\item{Y}{categorical variables}
+\item{progressBar}{- show progressbar (TRUE/FALE)}
 
-\item{alpha}{= 1 (lasso), alpha = 0 (ridge), 0 < alpha < 1 (elastic net penalty)}
+\item{object}{- elastic net classifier}
 
-\item{lambda}{= strength of elastic net penalty}
+\item{validation}{- Mfold or LOOCV}
 
-\item{M}{= # of folds}
+\item{iter}{- number of times to repeat cross-validation}
 
-\item{folds}{list of length iter with each element a list of length M}
-
-\item{family}{"binomial" or "multinomial"}
-
-\item{filter}{= "none" or "p.value"}
-
-\item{topranked}{= 50 (top number of features to select and build a classifier)}
-
-\item{X.test}{nxp matrx  - test dataset}
+\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
 }
 \description{
-Estimate test error of elastic net panel
+build an elastic net classification panel
 }
 

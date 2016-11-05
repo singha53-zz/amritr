@@ -2,25 +2,33 @@
 % Please edit documentation in R/supportFunc_enet.R
 \name{perf.enet}
 \alias{perf.enet}
-\title{table of classification performances}
+\title{cross-validation function for elastic net panel}
 \usage{
 perf.enet(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 }
 \arguments{
-\item{object}{- elastic net classifier}
+\item{M}{= # of folds}
 
-\item{validation}{- Mfold or LOOCV}
+\item{X}{nxp matrix - training dataset}
 
-\item{M}{- # of folds}
+\item{Y}{categorical variables}
 
-\item{iter}{- number of times to repeat cross-validation}
+\item{alpha}{= 1 (lasso), alpha = 0 (ridge), 0 < alpha < 1 (elastic net penalty)}
 
-\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
+\item{family}{"binomial" or "multinomial"}
 
-\item{progressBar}{- show progressbar (TRUE/FALE)}
+\item{lambda}{= strength of elastic net penalty}
+
+\item{folds}{list of length iter with each element a list of length M}
+
+\item{X.test}{nxp matrx  - test dataset}
+
+\item{filter}{= "none" or "p.value"}
+
+\item{topranked}{= 50 (top number of features to select and build a classifier)}
 }
 \description{
-build an elastic net classification panel
+Estimate test error of elastic net panel
 }
 
