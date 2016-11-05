@@ -195,7 +195,7 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
     Y.train = Y[-omit]
     X.test = matrix(X[omit, ], nrow = length(omit))
     enet.res = suppressWarnings(enet(X.train, Y.train, alpha = alpha,
-      lambda = lambda, family = family))
+      lambda = lambda, family = family, filter = filter, topranked = topranked))
     probs[[i]] <- predict(enet.res$fit, newx = X.test, s = lambda,
       type = "response")
     predictResponseList[[i]] <- predict(enet.res$fit, newx = X.test,
