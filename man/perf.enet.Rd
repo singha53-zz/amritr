@@ -8,13 +8,19 @@ perf.enet(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{object}{- elastic net classifier}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{validation}{- Mfold or LOOCV}
 
-\item{direction}{= "auto", ">", "<"}
+\item{M}{- # of folds}
+
+\item{iter}{- number of times to repeat cross-validation}
+
+\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
+
+\item{progressBar}{- show progressbar (TRUE/FALE)}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+build an elastic net classification panel
 }
 
