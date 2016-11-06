@@ -2,18 +2,29 @@
 % Please edit documentation in R/supportFunc_svm.R
 \name{supportVectorMachine}
 \alias{supportVectorMachine}
-\title{table of classification performances}
+\title{SVM classification panel}
 \usage{
-supportVectorMachine(X, Y, X.test = NULL, Y.test = NULL)
+supportVectorMachine(X, Y, X.test = NULL, Y.test = NULL,
+  family = "binomial", filter = "p.value", topranked = 50)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X}{nxp matrix - training dataset}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{Y}{categorical variables}
 
-\item{direction}{= "auto", ">", "<"}
+\item{X.test}{nxp matrx  - test dataset}
+
+\item{family}{"binomial" or "multinomial"}
+
+\item{filter}{= "none" or "p.value"}
+
+\item{topranked}{= 50 (top number of features to select and build a classifier)}
+
+\item{alpha}{= 1 (lasso), alpha = 0 (ridge), 0 < alpha < 1 (elastic net penalty)}
+
+\item{lambda}{= strength of elastic net penalty}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+build a SVM classification panel
 }
 

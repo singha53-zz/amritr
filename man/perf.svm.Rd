@@ -2,19 +2,31 @@
 % Please edit documentation in R/supportFunc_svm.R
 \name{perf.svm}
 \alias{perf.svm}
-\title{table of classification performances}
+\title{cross-validation function for svm panel}
 \usage{
 perf.svm(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{M}{= # of folds}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{iter}{= number of times to repeat cross-valiation}
 
-\item{direction}{= "auto", ">", "<"}
+\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
+
+\item{progressBar}{- show progressbar (TRUE/FALE)}
+
+\item{X}{nxp matrix - training dataset}
+
+\item{Y}{categorical variables}
+
+\item{alpha}{= 1 (lasso), alpha = 0 (ridge), 0 < alpha < 1 (elastic net penalty)}
+
+\item{family}{"binomial" or "multinomial"}
+
+\item{lambda}{= strength of elastic net penalty}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Estimate test error of svm panel
 }
 
