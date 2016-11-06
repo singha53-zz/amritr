@@ -86,7 +86,8 @@ perf.glm = function(object, validation = c("Mfold", "loo"), M = 5, iter = 10, th
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- glmCV(X, Y, M, folds, progressBar)
-    perf <- cv$perf
+    perf <- data.frame(Mean = cv$perf) %>% mutate(ErrName = rownames(.))
+    perf$SD <- NA
   }
   result = list()
   result$perf = perf

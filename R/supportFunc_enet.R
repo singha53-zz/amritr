@@ -112,7 +112,7 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
     if (progressBar == TRUE)
       setTxtProgressBar(pb, i/M)
     omit = folds[[i]]
-    X.train = X[-omit, ]
+    X.train = X[-omit, , drop = FALSE]
     Y.train = Y[-omit]
 
     if (filter == "none") {
@@ -122,7 +122,7 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
       design <- model.matrix(~Y.train)
       fit <- eBayes(lmFit(t(X.train), design))
       top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
-      X.train1 <- X.train[, rownames(top)[1:topranked]]
+      X.train1 <- X.train[, rownames(top)[1:topranked], drop = FALSE]
     }
     X.test1 = X[omit, colnames(X.train1), drop = FALSE]
 
@@ -236,7 +236,8 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     M = n
     cv <- enetCV(X, Y, alpha, lambda, M, folds, progressBar,
       family, filter, topranked)
-    perf <- cv$perf
+    perf <- data.frame(Mean = cv$perf) %>% mutate(ErrName = rownames(.))
+    perf$SD <- NA
   }
   result = list()
   result$folds = folds

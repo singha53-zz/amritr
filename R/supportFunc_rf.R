@@ -84,7 +84,7 @@ rfCV = function(X, Y, M, folds, progressBar, family, filter, topranked)
     if (progressBar == TRUE)
       setTxtProgressBar(pb, i/M)
     omit = folds[[i]]
-    X.train = X1[-omit, ]
+    X.train = X1[-omit, , drop = FALSE]
     Y.train = Y[-omit]
 
     if (filter == "none") {
@@ -94,7 +94,7 @@ rfCV = function(X, Y, M, folds, progressBar, family, filter, topranked)
       design <- model.matrix(~Y.train)
       fit <- eBayes(lmFit(t(X.train), design))
       top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
-      X.train1 <- X.train[, rownames(top)[1:topranked]]
+      X.train1 <- X.train[, rownames(top)[1:topranked], drop = FALSE]
     }
     X.test1 = X1[omit, colnames(X.train1), drop = FALSE]
 
@@ -168,7 +168,8 @@ perf.rf = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- rfCV(X, Y, M, folds, progressBar, family, filter, topranked)
-    perf <- cv$perf
+    perf <- data.frame(Mean = cv$perf) %>% mutate(ErrName = rownames(.))
+    perf$SD <- NA
   }
 
 
