@@ -10,6 +10,12 @@ perf.enet(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
 \arguments{
 \item{M}{= # of folds}
 
+\item{iter}{= number of times to repeat cross-valiation}
+
+\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
+
+\item{progressBar}{- show progressbar (TRUE/FALE)}
+
 \item{X}{nxp matrix - training dataset}
 
 \item{Y}{categorical variables}
@@ -19,14 +25,6 @@ perf.enet(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
 \item{family}{"binomial" or "multinomial"}
 
 \item{lambda}{= strength of elastic net penalty}
-
-\item{folds}{list of length iter with each element a list of length M}
-
-\item{X.test}{nxp matrx  - test dataset}
-
-\item{filter}{= "none" or "p.value"}
-
-\item{topranked}{= 50 (top number of features to select and build a classifier)}
 }
 \description{
 Estimate test error of elastic net panel

@@ -2,19 +2,25 @@
 % Please edit documentation in R/supportFunc_rf.R
 \name{perf.rf}
 \alias{perf.rf}
-\title{table of classification performances}
+\title{Cross-validation repeated iter number of times}
 \usage{
 perf.rf(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   threads = 4, progressBar = TRUE)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{object}{= rforest object}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{validation}{= "Mfold" or "loo}
 
-\item{direction}{= "auto", ">", "<"}
+\item{M}{= # of folds}
+
+\item{iter}{= number of times to repeat cross-validation}
+
+\item{threads}{= number of cores to use (each cross-valiation scheme performed on a separate node)}
+
+\item{show}{progress bar or not: progressBar (TRUE/FALSE)}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Estimate the mean+/-SD test error
 }
 

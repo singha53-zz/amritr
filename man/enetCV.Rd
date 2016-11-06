@@ -7,19 +7,21 @@
 enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked)
 }
 \arguments{
-\item{M}{- # of folds}
+\item{X}{nxp matrix - training dataset}
 
-\item{progressBar}{- show progressbar (TRUE/FALE)}
+\item{Y}{categorical variables}
 
-\item{object}{- elastic net classifier}
+\item{M}{= # of folds}
 
-\item{validation}{- Mfold or LOOCV}
+\item{folds}{list of length M specifiying which samples are in which fold}
 
-\item{iter}{- number of times to repeat cross-validation}
+\item{family}{"binomial" or "multinomial"}
 
-\item{threads}{- number of cpus (each cross-valiation scheme performed on a separate node)}
+\item{filter}{= "none" or "p.value"}
+
+\item{topranked}{= 50 (top number of features to select and build a classifier)}
 }
 \description{
-build an elastic net classification panel
+Estimate test error of elastic net panel
 }
 

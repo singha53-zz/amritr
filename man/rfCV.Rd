@@ -2,18 +2,26 @@
 % Please edit documentation in R/supportFunc_rf.R
 \name{rfCV}
 \alias{rfCV}
-\title{table of classification performances}
+\title{cross-validation for a random forest panel}
 \usage{
-rfCV(X, Y, M, folds, progressBar)
+rfCV(X, Y, M, folds, progressBar, family, filter, topranked)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X}{nxp matrix - training dataset}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{Y}{categorical variables}
 
-\item{direction}{= "auto", ">", "<"}
+\item{M}{= # of folds}
+
+\item{folds}{list of length M specifiying which samples are in which fold}
+
+\item{family}{"binomial" or "multinomial"}
+
+\item{filter}{= "none" or "p.value"}
+
+\item{topranked}{= 50 (top number of features to select and build a classifier)}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Estimate test error of random forest panel
 }
 

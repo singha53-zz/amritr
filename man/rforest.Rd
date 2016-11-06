@@ -2,18 +2,25 @@
 % Please edit documentation in R/supportFunc_rf.R
 \name{rforest}
 \alias{rforest}
-\title{table of classification performances}
+\title{Random forest classification panel}
 \usage{
-rforest(X, Y, X.test = NULL, Y.test = NULL)
+rforest(X, Y, X.test = NULL, Y.test = NULL, family = "binomial",
+  filter = "p.value", topranked = 50)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X}{nxp matrix - training dataset}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{Y}{categorical variables}
 
-\item{direction}{= "auto", ">", "<"}
+\item{X.test}{nxp matrx  - test dataset}
+
+\item{family}{"binomial" or "multinomial"}
+
+\item{filter}{= "none" or "p.value"}
+
+\item{topranked}{= 50 (top number of features to select and build a classifier)}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+build random forest classification panel
 }
 
