@@ -180,6 +180,7 @@ perf.svm = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   }
   result = list()
   result$perf = perf
+  result$probs = cv$probs
   result$panels = cv$svm.cvPanels
   method = "svm.mthd"
   result$meth = "svm.mthd"

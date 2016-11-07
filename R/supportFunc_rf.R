@@ -172,9 +172,9 @@ perf.rf = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     perf$SD <- NA
   }
 
-
   result = list()
   result$perf = perf
+  result$probs = cv$probs
   result$panels = cv$rf.cvPanels
   method = "rf.mthd"
   result$meth = "rf.mthd"
