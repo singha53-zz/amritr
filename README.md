@@ -10,39 +10,26 @@ December 3, 2016
 ```r
 library(amritr); data("pathways")
 library(mixOmics); data("breast.TCGA")
-```
 
-```
-## Loading required package: MASS
-```
-
-```
-## Loading required package: lattice
-```
-
-```
-## Loading required package: ggplot2
-```
-
-```
-## Warning: package 'ggplot2' was built under R version 3.3.2
-```
-
-```
-## 
-## Loaded mixOmics 6.1.1
-## 
-## Visit http://www.mixOmics.org for more details about our methods.
-## Any bug reports or comments? Notify us at mixomics at math.univ-toulouse.fr or https://bitbucket.org/klecao/package-mixomics/issues
-## 
-## Thank you for using mixOmics!
-```
-
-```r
 Y = breast.TCGA$data.train$subtype
-X = breast.TCGA$data.train$mrna[which(Y != "LumA")]
-Y = droplevels(Y[which(Y != "LumA")])
+names(Y) <- rownames(breast.TCGA$data.train$mrna)
+
+Y = c(Y[Y == "Basal"][1:10], Y[Y == "Her2"][1:10])
+Y[Y == 1] <- "Basal"
+Y[Y == 2] <- "Her2"
+Y <- factor(Y)
+set.seed(123)
+X = breast.TCGA$data.train$mrna[names(Y), sample(1:200, 30)]
 
 ## run biomarker pipeline for a binary response
-#biomarkerPipeline = function(X = X, Y = Y, topranked = 50, validation = "Mfold", M = 5, iter = 1, threads = 1, progressBar = TRUE, pathways = pathways)
+allPanels <- biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 5, iter = 2, threads = 2, progressBar = TRUE, pathways = pathways)
+
+allPanels %>% arrange(Mean) %>% mutate(Panel = 1:nrow(.)) %>% 
+  ggplot(aes(x = Panel, y = Mean, color = Type)) + geom_point() +
+  customTheme(sizeStripFont = 10, xAngle = 0, hjust = 0.5, vjust = 0.5,
+    xSize = 10, ySize = 10, xAxisSize = 10, yAxisSize = 10) +
+  ylab("AUC - 2x5-fold CV") + xlab("Panels") +
+  geom_hline(yintercept = 0.5, linetype = "dashed")
 ```
+
+![](README_files/figure-html/biomarkerPipeline-1.png)<!-- -->
