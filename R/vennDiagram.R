@@ -41,7 +41,7 @@ venndiagram = function(datList, circleNames){
 vennDual = function(datlist){
   first <- datList[[1]]
   second <- datList[[2]]
-  draw.pairwise.venn(
+  VennDiagram::draw.pairwise.venn(
     area1 = length(first),
     area2 = length(second),
     cross.area = length(intersect(first, second)),
@@ -69,7 +69,7 @@ vennTriple = function(datList){
   first <- datList[[1]]
   second <- datList[[2]]
   third <- datList[[3]]
-  draw.triple.venn(
+  VennDiagram::draw.triple.venn(
     area1 = length(first),
     area2 = length(second),
     area3 = length(third),
@@ -95,7 +95,7 @@ vennQuad = function(datList){
   second <- datList[[2]]
   third <- datList[[3]]
   fourth <- datList[[4]]
-  draw.quad.venn(
+  VennDiagram::draw.quad.venn(
     area1 = length(first),
     area2 = length(second),
     area3 = length(third),

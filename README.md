@@ -108,7 +108,7 @@ allPanels %>% arrange(Mean) %>% mutate(Panel = 1:nrow(.)) %>%
 ```
 
 ```r
-pcaX <- pca(X[, unlist(strsplit(topPanel$Genes, "_"))], scale = TRUE, center = TRUE)
+pcaX <- plsda(X[, unlist(strsplit(topPanel$Genes, "_"))], Y)
 plotIndiv(pcaX, group = Y, ellipse = TRUE, star = TRUE)
 ```
 
@@ -292,7 +292,7 @@ diablo_enetErrTrain <- diablo_enetErrTrain[c("meanErr", "sdErr")]
 
 ## test error
 diabloTest <- predict(TCGA.block.splsda, X.test, method = "all")
-diabloTestConsensus <- lapply(diabloTest$MajorityVote, function(i){
+diabloTestConsensus <- lapply(diabloTest$WeightedVote, function(i){
   predY <- apply(i, 2, function(z){
     temp <- table(factor(z, levels = levels(Y.test)), Y.test)
     diag(temp) <- 0
@@ -301,9 +301,8 @@ diabloTestConsensus <- lapply(diabloTest$MajorityVote, function(i){
     error
   })
 })
-diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = " ")], NA)
+diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = "")], NA)
 names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
-
 ## DIABLO panel error rate
 rbind(diablo_enetErrTrain, diablo_enetErrTest) %>% 
   mutate(Set = c("Train", "Test"))
@@ -313,6 +312,74 @@ rbind(diablo_enetErrTrain, diablo_enetErrTest) %>%
 ## # A tibble: 2 × 3
 ##     meanErr      sdErr   Set
 ##       <dbl>      <dbl> <chr>
-## 1 0.2007407 0.01990375 Train
-## 2 0.1396825         NA  Test
+## 1 0.2311111 0.03456966 Train
+## 2 0.1587302         NA  Test
 ```
+
+## overlap between panels
+## Ensemble and DIABLO
+
+
+```r
+datList = list(ensemble = as.character(unlist(ensemblePanel)), diablo=as.character(unlist(diabloFeat)))
+venndiagram(datList = datList, circleNames = c("Ensemble", "DIABLO"))
+```
+
+![](README_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
+```
+## $vennPlot
+## (polygon[GRID.polygon.11], polygon[GRID.polygon.12], polygon[GRID.polygon.13], polygon[GRID.polygon.14], text[GRID.text.15], text[GRID.text.16], text[GRID.text.17], text[GRID.text.18], text[GRID.text.19]) 
+## 
+## $elements
+## $elements$ensemble
+##  [1] "NDRG2"          "MED13L"         "SNORA8"         "STAT5A"        
+##  [5] "AKAP12"         "SLCO3A1"        "SLC19A2"        "TBC1D4"        
+##  [9] "STC2"           "CD302"          "LAPTM4B"        "CSRP2"         
+## [13] "PLCD3"          "OGFRL1"         "DBP"            "TOB1"          
+## [17] "SHROOM3"        "TIGD5"          "IFITM2"         "SLC5A6"        
+## [21] "CDK18"          "YPEL2"          "CBR1"           "C1QB"          
+## [25] "PLCD4"          "ZNF37B"         "MEGF9"          "FAM13A"        
+## [29] "TRIM45"         "ELP2"           "KRT8"           "TP53INP2"      
+## [33] "hsa-let-7b"     "hsa-mir-101-1"  "hsa-mir-101-2"  "hsa-mir-107"   
+## [37] "hsa-mir-10a"    "hsa-mir-125a"   "hsa-mir-128-2"  "hsa-mir-139"   
+## [41] "hsa-mir-148a"   "hsa-mir-148b"   "hsa-mir-149"    "hsa-mir-155"   
+## [45] "hsa-mir-181a-2" "hsa-mir-181b-1" "hsa-mir-181c"   "hsa-mir-181d"  
+## [49] "hsa-mir-183"    "hsa-mir-185"    "hsa-mir-191"    "hsa-mir-193a"  
+## [53] "hsa-mir-196b"   "hsa-mir-203"    "hsa-mir-26b"    "hsa-mir-328"   
+## [57] "hsa-mir-331"    "hsa-mir-340"    "hsa-mir-342"    "hsa-mir-3613"  
+## [61] "hsa-mir-375"    "hsa-mir-378"    "hsa-mir-423"    "hsa-mir-424"   
+## [65] "hsa-mir-451"    "hsa-mir-497"    "hsa-mir-574"    "hsa-mir-584"   
+## [69] "hsa-mir-625"    "hsa-mir-664"    "hsa-mir-7-1"    "hsa-mir-874"   
+## 
+## $elements$diablo
+##  [1] "ZEB1"           "HTRA1"          "KDM4B"          "EPHB3"         
+##  [5] "C4orf34"        "LRIG1"          "SLC43A3"        "TTC39A"        
+##  [9] "NTN4"           "SNED1"          "SEMA3C"         "TAGLN"         
+## [13] "ARL4C"          "SEMA5A"         "COL15A1"        "SDC1"          
+## [17] "TCF4"           "COL6A1"         "APBB1IP"        "IL1R1"         
+## [21] "EMP3"           "CNN2"           "CCDC80"         "CXCL12"        
+## [25] "POSTN"          "IL4R"           "CTSK"           "MRVI1"         
+## [29] "CERCAM"         "hsa-let-7d"     "hsa-mir-106b"   "hsa-mir-146a"  
+## [33] "hsa-mir-15b"    "hsa-mir-16-2"   "hsa-mir-17"     "hsa-mir-186"   
+## [37] "hsa-mir-197"    "hsa-mir-19b-2"  "hsa-mir-501"    "hsa-mir-532"   
+## [41] "hsa-mir-576"    "hsa-mir-660"    "hsa-mir-9-2"    "hsa-mir-92a-1" 
+## [45] "hsa-mir-92a-2"  "hsa-mir-98"     "hsa-mir-125b-1" "hsa-mir-127"   
+## [49] "hsa-mir-141"    "hsa-mir-152"    "hsa-mir-181a-1" "hsa-mir-199a-1"
+## [53] "hsa-mir-199a-2" "hsa-mir-199b"   "hsa-mir-200c"   "hsa-mir-214"   
+## [57] "hsa-mir-22"     "hsa-mir-2355"   "hsa-mir-23b"    "hsa-mir-27b"   
+## [61] "hsa-mir-337"    "hsa-mir-379"    "hsa-mir-381"    "hsa-mir-409"   
+## [65] "hsa-mir-539"    "hsa-mir-542"    "hsa-mir-708"    "hsa-mir-99a"   
+## 
+## $elements$ensemblediablo
+##  [1] "ASPM"          "ZNF552"        "FUT8"          "DTWD2"        
+##  [5] "ALCAM"         "E2F1"          "CCNA2"         "NCAPG2"       
+##  [9] "PREX1"         "MEX3A"         "hsa-let-7c"    "hsa-mir-106a" 
+## [13] "hsa-mir-1301"  "hsa-mir-1307"  "hsa-mir-130b"  "hsa-mir-134"  
+## [17] "hsa-mir-200b"  "hsa-mir-20a"   "hsa-mir-21"    "hsa-mir-25"   
+## [21] "hsa-mir-30a"   "hsa-mir-30c-2" "hsa-mir-455"   "hsa-mir-505"  
+## [25] "hsa-mir-590"   "hsa-mir-9-1"   "hsa-mir-93"
+```
+
+
+

@@ -54,7 +54,7 @@ set.seed(123)
 X = breast.TCGA$data.train$mrna[names(Y), sample(1:200, 30)]
 
 ## run biomarker pipeline for a binary response
-allPanels <- biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 2, 
+allPanels <- amritr::biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 2, 
              iter = 2, threads = 2, progressBar = TRUE, pathways = pathways)
 allPanels %>% arrange(desc(Mean)) %>% head
 ```
@@ -76,7 +76,7 @@ allPanels %>% arrange(Mean) %>% mutate(Panel = 1:nrow(.)) %>%
 ```{r}
 (topPanel <- allPanels %>% arrange(desc(Mean)) %>% head %>% slice(1))
 
-pcaX <- pca(X[, unlist(strsplit(topPanel$Genes, "_"))], scale = TRUE, center = TRUE)
+pcaX <- plsda(X[, unlist(strsplit(topPanel$Genes, "_"))], Y)
 plotIndiv(pcaX, group = Y, ellipse = TRUE, star = TRUE)
 
 ```
@@ -94,14 +94,14 @@ Y.test <- breast.TCGA$data.test$subtype
 M = 2; iter = 2; cpus = 2;
 
 ## Build panel and estimate test performance
-result <- enet(X = do.call(cbind, X.train), Y = Y.train, alpha=1, family="multinomial", lambda = NULL, 
+result <- amritr::enet(X = do.call(cbind, X.train), Y = Y.train, alpha=1, family="multinomial", lambda = NULL, 
                X.test = do.call(cbind, X.test), Y.test = Y.test, filter = "none", topranked = 50)
 lapply(X.train, function(i){
   intersect(colnames(i), result$enet.panel)
 })
 
 ## Estimate panel performance using cross-validation
-cv <- perf.enet(result, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = FALSE)
+cv <- amritr::perf.enet(result, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = FALSE)
 concat_enetErrTrain_tuneConcat <- filter(cv$perf, ErrName == "BER")[-1]
 concat_enetErrTest_tuneConcat <- c(result$perfTest["BER"], NA)
 names(concat_enetErrTest_tuneConcat) <- names(concat_enetErrTrain_tuneConcat)
@@ -117,13 +117,13 @@ rbind(concat_enetErrTrain_tuneConcat, concat_enetErrTest_tuneConcat) %>%
 
 ```{r}
 ## Build panel and estimate test performance
-ensembleMod <- ensembleEnet(X.train, Y.train, alpha=1, lambda=NULL, X.test, Y.test)
+ensembleMod <- amritr::ensembleEnet(X.train, Y.train, alpha=1, lambda=NULL, X.test, Y.test)
 ensembleResult <- ensembleMod$result %>% zip_nPure()
 ensemblePanel <- ensembleResult$enet.panel
 ensemblePanel
 
 ## Estimate panel performance using cross-validation
-ensembleTrain <- perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
+ensembleTrain <- amritr::perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
 ensemble_enetLength <- lapply(ensemblePanel, length)
 ensemble_enetErrTrain_tuneEnsemble <- filter(ensembleTrain$perf, ErrName == "BER")[-1]
 ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$error["BER"], NA)
@@ -164,7 +164,7 @@ diablo_enetErrTrain <- diablo_enetErrTrain[c("meanErr", "sdErr")]
 
 ## test error
 diabloTest <- predict(TCGA.block.splsda, X.test, method = "all")
-diabloTestConsensus <- lapply(diabloTest$MajorityVote, function(i){
+diabloTestConsensus <- lapply(diabloTest$WeightedVote, function(i){
   predY <- apply(i, 2, function(z){
     temp <- table(factor(z, levels = levels(Y.test)), Y.test)
     diag(temp) <- 0
@@ -173,10 +173,20 @@ diabloTestConsensus <- lapply(diabloTest$MajorityVote, function(i){
     error
   })
 })
-diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = " ")], NA)
+diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = "")], NA)
 names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
-
 ## DIABLO panel error rate
 rbind(diablo_enetErrTrain, diablo_enetErrTest) %>% 
   mutate(Set = c("Train", "Test"))
+```
+
+## overlap between panels
+## Ensemble and DIABLO
+
+```{r}
+datList = list(ensemble = as.character(unlist(ensemblePanel)), diablo=as.character(unlist(diabloFeat)))
+amritr::venndiagram(datList = datList, circleNames = c("Ensemble", "DIABLO"))
+```
+
+
 
