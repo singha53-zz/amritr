@@ -147,3 +147,56 @@ nodeIndices <- rbind(nodeDegree, bet, clo, clo2, eigenCentrality, hararyCentrali
 return(list(nodeIndices = nodeIndices, gdist = gdist, graphDensity = graphDensity, recipScore = recipScore,
   transScore = transScore, dyadCensus = dyadCensus, triadCensus = triadCensus, cliques = cliques, isolatedVertices = isolatedVertices))
 }
+
+#' graphIndices()
+#'
+#' build integrative panels (Concatenation, Ensemble, DIABLO)
+#' @param panels - list of panels (character vector corresponding to column names of X.train)
+#' @param X.train - list of datasets (n x p)
+#' @param cut-off - of person correlatio
+#' @param concat_lambda - value that controls the strength of the penalization
+#' @param single_alphaList - list of alpha values of length k
+#' @param single_lambdaList - list of lambda values of length k
+#' @export
+graphIndices = function(panels = panels, X.train = X.train, cutoff = cutoff){
+  library(dplyr)
+  ## Determine adjacency matrices
+  adjMat <- lapply(panels, function(i){
+    adjMat = cor(do.call(cbind, mapply(function(x, y){
+      y[, x]
+    }, x = i, y = X.train)))
+    adjMat[abs(adjMat) < cutoff] <- 0
+    adjMat[abs(adjMat) > cutoff] <- 1
+    adjMat
+  })
+
+  # Estimate graph statistics
+  graphs <- lapply(adjMat, function(x) amritr::networkStats(adjMat = x))
+
+  ## graphDensity, recipScore, transScore, cliques
+  gIndices <- lapply(graphs, function(i){
+    data.frame(Value = c(i$graphDensity, i$recipScore["edgewise.lrr"], i$transScore["weakcensus"], length(i$cliques)),
+      Statistic = c("Graph Density", "Edgewise.lrr", "Transitivity", "NumOfCliques"))
+
+  })
+  gIndicesDat <- do.call(rbind, gIndices) %>% mutate(Method = rep(names(gIndices), each = 4))
+
+  # Dyads and Triads
+  dyads <- do.call(rbind, lapply(graphs, function(x){x$dyadCensus}))
+  dyads <- as.data.frame(dyads)[,-2] %>% mutate(Method = names(graphs)) %>%
+    tidyr::gather(Type, Number, -Method)
+  triads <- do.call(rbind, lapply(graphs, function(x){x$triadCensus}))
+  triads <- as.data.frame(triads) %>% mutate(Method = names(graphs)) %>%
+    tidyr::gather(Type, Number, -Method)
+
+  # Number of isolates
+  isolatedFeat <- lapply(graphs, function(x){ x$isolatedVertices})
+  isolates <- do.call(rbind, lapply(isolatedFeat, function(x){
+    unlist(lapply(X.train, function(y){
+      length(intersect(x, colnames(y)))
+    }))
+  })) %>% as.data.frame %>% mutate(Method = names(graphs)) %>%
+    tidyr::gather(Dataset, NumOfIsolates, -Method)
+
+  return(list(adjMat = adjMat, gIndicesDat = gIndicesDat, dyads = dyads, triads = triads, isolates = isolates))
+}
