@@ -56,7 +56,7 @@ X = breast.TCGA$data.train$mrna[names(Y), sample(1:200, 30)]
 ## run biomarker pipeline for a binary response
 allPanels <- biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 2, 
              iter = 2, threads = 2, progressBar = TRUE, pathways = pathways)
-head(allPanels)
+allPanels %>% arrange(desc(Mean)) %>% head
 ```
 
 ### Plot AUC (Mean +/- SD) of all panels
@@ -71,19 +71,112 @@ allPanels %>% arrange(Mean) %>% mutate(Panel = 1:nrow(.)) %>%
   geom_hline(yintercept = 0.5, linetype = "dashed")
 ```
 
-# Concatenation-Enet biomarker panel
+### Plot best performing panel
+
+```{r}
+(topPanel <- allPanels %>% arrange(desc(Mean)) %>% head %>% slice(1))
+
+pcaX <- pca(X[, unlist(strsplit(topPanel$Genes, "_"))], scale = TRUE, center = TRUE)
+plotIndiv(pcaX, group = Y, ellipse = TRUE, star = TRUE)
+
+```
+
+# Integrative methods (Concatenation, Ensemble and DIABLO)
+## Concatenation-Enet biomarker panel
 ### Description of algorithm
   * all X datasets are combined column-wise and a single-dataset classifer is applied (Enet)
 
 ```{r}
-combinedDat <- do.call(cbind, breast.TCGA$data.train[-length(breast.TCGA$data.train)])
+X.train <- breast.TCGA$data.train[c("mrna", "mirna")]
 Y.train <- breast.TCGA$data.train$subtype
-# Enet
-result <- enet(X = combinedDat, Y = Y.train, alpha=1, family="multinomial", lambda = NULL, X.test = NULL, Y.test = NULL,
-  filter = "none", topranked = 50)
-lapply(breast.TCGA$data.train[-length(breast.TCGA$data.train)], function(i){
+X.test <- breast.TCGA$data.test[c("mrna", "mirna")]
+Y.test <- breast.TCGA$data.test$subtype
+M = 2; iter = 2; cpus = 2;
+
+## Build panel and estimate test performance
+result <- enet(X = do.call(cbind, X.train), Y = Y.train, alpha=1, family="multinomial", lambda = NULL, 
+               X.test = do.call(cbind, X.test), Y.test = Y.test, filter = "none", topranked = 50)
+lapply(X.train, function(i){
   intersect(colnames(i), result$enet.panel)
 })
 
+## Estimate panel performance using cross-validation
+cv <- perf.enet(result, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = FALSE)
+concat_enetErrTrain_tuneConcat <- filter(cv$perf, ErrName == "BER")[-1]
+concat_enetErrTest_tuneConcat <- c(result$perfTest["BER"], NA)
+names(concat_enetErrTest_tuneConcat) <- names(concat_enetErrTrain_tuneConcat)
+
+## Concateantion panel error rate
+rbind(concat_enetErrTrain_tuneConcat, concat_enetErrTest_tuneConcat) %>% 
+  mutate(Set = c("Train", "Test"))
+
 ```
+
+## Ensemble classifier
+### Description of classifier
+
+```{r}
+## Build panel and estimate test performance
+ensembleMod <- ensembleEnet(X.train, Y.train, alpha=1, lambda=NULL, X.test, Y.test)
+ensembleResult <- ensembleMod$result %>% zip_nPure()
+ensemblePanel <- ensembleResult$enet.panel
+ensemblePanel
+
+## Estimate panel performance using cross-validation
+ensembleTrain <- perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
+ensemble_enetLength <- lapply(ensemblePanel, length)
+ensemble_enetErrTrain_tuneEnsemble <- filter(ensembleTrain$perf, ErrName == "BER")[-1]
+ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$error["BER"], NA)
+names(ensemble_enetErrTest_tuneEnsemble) <- names(ensemble_enetErrTrain_tuneEnsemble)
+
+## Ensemble panel error rate
+rbind(ensemble_enetErrTrain_tuneEnsemble, ensemble_enetErrTest_tuneEnsemble) %>% 
+  mutate(Set = c("Train", "Test"))
+
+```
+
+## DIABLO classifier
+### description of classifier
+
+#### tune DIABLO classifier
+
+```{r}
+design <- setDesign(X.train, corCutOff = 0.6, plotMat = FALSE)
+ncomp <- nlevels(Y.train) - 1
+list.keepX <- lapply(ensemble_enetLength, function(i){
+  rep(round(i/ncomp, 0), ncomp)
+})
+TCGA.block.splsda = block.splsda(X = X.train, Y = Y.train, 
+  ncomp = ncomp, keepX = list.keepX, design = design,
+  scheme = "centroid")
+
+diabloFeat <- lapply(TCGA.block.splsda$loadings[-(length(X.train)+1)], function(x)
+  unique(as.character(as.matrix(apply(x, 2, function(i) names(i)[which(i != 0)])))))
+diabloFeat
+
+## training error
+cv <- perf(TCGA.block.splsda, validation = "Mfold", folds = M, cpus = cpus, nrepeat = iter)
+err <- extractErr(cv)
+err$Comp <- factor(err$Comp, levels = paste("comp", 1:ncomp, sep = "."))
+diablo_enetErrTrain <- err %>% filter(Type == "centroids.dist", Class == "Overall.BER", 
+  EnsembleMode == "wMajVote", Dataset == "DIABLO", Comp == paste("comp", ncomp, sep = "."))
+diablo_enetErrTrain <- diablo_enetErrTrain[c("meanErr", "sdErr")]
+
+## test error
+diabloTest <- predict(TCGA.block.splsda, X.test, method = "all")
+diabloTestConsensus <- lapply(diabloTest$MajorityVote, function(i){
+  predY <- apply(i, 2, function(z){
+    temp <- table(factor(z, levels = levels(Y.test)), Y.test)
+    diag(temp) <- 0
+    error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
+    names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+    error
+  })
+})
+diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = " ")], NA)
+names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
+
+## DIABLO panel error rate
+rbind(diablo_enetErrTrain, diablo_enetErrTest) %>% 
+  mutate(Set = c("Train", "Test"))
 
