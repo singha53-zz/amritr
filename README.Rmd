@@ -18,9 +18,13 @@ library(amritr); data("pathways")
 library(mixOmics); data("breast.TCGA")
 
 Y = breast.TCGA$data.train$subtype
-X = breast.TCGA$data.train$mrna[which(Y != "LumA"), ]
-Y = droplevels(Y[which(Y != "LumA")])
-names(Y) <- rownames(X)
+names(Y) <- rownames(breast.TCGA$data.train$mrna)
+
+Y = c(Y[Y == "Basal"][1:10], Y[Y == "Her2"][1:10])
+Y[Y == 1] <- "Basal"
+Y[Y == 2] <- "Her2"
+Y <- factor(Y)
+X = breast.TCGA$data.train$mrna[names(Y), ]
 
 ## run biomarker pipeline for a binary response
 allPanels <- biomarkerPipeline(X = X, Y = Y, topranked = 50, validation = "Mfold", M = 5, iter = 2, threads = 2, progressBar = TRUE, pathways = pathways)
@@ -29,6 +33,6 @@ allPanels %>% arrange(Mean) %>% mutate(Panel = 1:nrow(.)) %>%
   ggplot(aes(x = Panel, y = Mean, color = Type)) + geom_point() +
   customTheme(sizeStripFont = 10, xAngle = 0, hjust = 0.5, vjust = 0.5,
     xSize = 10, ySize = 10, xAxisSize = 10, yAxisSize = 10) +
-  ylab("AUC - LOOCV") + xlab("Panels") +
+  ylab("AUC - 2x5-fold CV") + xlab("Panels") +
   geom_hline(yintercept = 0.5, linetype = "dashed")
 ```
