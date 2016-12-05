@@ -6,8 +6,11 @@ December 3, 2016
 
 
 ```r
+#library(devtools)
+#install_github("singha53/amritr")
 library(amritr)
 library(mixOmics)
+library(dplyr); library(tidyr);
 ```
 
 #biomarker pipeline()
@@ -47,7 +50,7 @@ set.seed(123)
 X = breast.TCGA$data.train$mrna[names(Y), sample(1:200, 30)]
 
 ## run biomarker pipeline for a binary response
-allPanels <- biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 2, 
+allPanels <- amritr::biomarkerPipeline(X = X, Y = Y, topranked = 30, validation = "Mfold", M = 2, 
              iter = 2, threads = 2, progressBar = TRUE, pathways = pathways)
 allPanels %>% arrange(desc(Mean)) %>% head
 ```
@@ -57,23 +60,23 @@ allPanels %>% arrange(desc(Mean)) %>% head
 ## 1 1.000 0.00000000    Enet_0.7_none
 ## 2 1.000 0.00000000    Enet_0.8_none
 ## 3 0.985 0.02121320    Enet_0.9_none
-## 4 0.980 0.02828427    Enet_0.5_none
-## 5 0.980 0.02828427 Enet_0.6_p.value
-## 6 0.980 0.02828427       RF_p.value
+## 4 0.985 0.02121320       RF_p.value
+## 5 0.980 0.02828427    Enet_0.5_none
+## 6 0.980 0.02828427 Enet_0.6_p.value
 ##                                                                                                        Genes
 ## 1                                       TANC2_ETS2_TTC39A_MEX3A_APOD_ALCAM_CDK18_ICA1_ZKSCAN1_C1orf162_FMNL2
 ## 2                                                 TANC2_ETS2_TTC39A_MEX3A_ALCAM_CDK18_ZKSCAN1_C1orf162_FMNL2
 ## 3                                                 TANC2_ETS2_TTC39A_MEX3A_ALCAM_CDK18_ZKSCAN1_C1orf162_FMNL2
-## 4 TANC2_ZNRF3_ETS2_TTC39A_MEX3A_APOD_AMPD3_ALCAM_HTRA1_CDK18_RHOU_SGPP1_ICA1_ZKSCAN1_C1orf162_FMNL2_EIF4EBP3
-## 5            CDK18_ALCAM_MEX3A_TANC2_TTC39A_FMNL2_APOD_SGPP1_ZKSCAN1_HTRA1_ETS2_C1orf162_ICA1_EIF4EBP3_AMPD3
-## 6                                               CDK18_ALCAM_MEX3A_TANC2_TTC39A_MEGF9_FMNL2_APOD_MAP3K1_SGPP1
+## 4                                               CDK18_ALCAM_MEX3A_TANC2_TTC39A_MEGF9_FMNL2_APOD_MAP3K1_SGPP1
+## 5 TANC2_ZNRF3_ETS2_TTC39A_MEX3A_APOD_AMPD3_ALCAM_HTRA1_CDK18_RHOU_SGPP1_ICA1_ZKSCAN1_C1orf162_FMNL2_EIF4EBP3
+## 6            CDK18_ALCAM_MEX3A_TANC2_TTC39A_FMNL2_APOD_SGPP1_ZKSCAN1_HTRA1_ETS2_C1orf162_ICA1_EIF4EBP3_AMPD3
 ##   Type
 ## 1 Enet
 ## 2 Enet
 ## 3 Enet
-## 4 Enet
+## 4   RF
 ## 5 Enet
-## 6   RF
+## 6 Enet
 ```
 
 ### Plot AUC (Mean +/- SD) of all panels
@@ -128,7 +131,7 @@ Y.test <- breast.TCGA$data.test$subtype
 M = 2; iter = 2; cpus = 2;
 
 ## Build panel and estimate test performance
-result <- enet(X = do.call(cbind, X.train), Y = Y.train, alpha=1, family="multinomial", lambda = NULL, 
+result <- amritr::enet(X = do.call(cbind, X.train), Y = Y.train, alpha=1, family="multinomial", lambda = NULL, 
                X.test = do.call(cbind, X.test), Y.test = Y.test, filter = "none", topranked = 50)
 lapply(X.train, function(i){
   intersect(colnames(i), result$enet.panel)
@@ -155,7 +158,7 @@ lapply(X.train, function(i){
 
 ```r
 ## Estimate panel performance using cross-validation
-cv <- perf.enet(result, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = FALSE)
+cv <- amritr::perf.enet(result, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = FALSE)
 concat_enetErrTrain_tuneConcat <- filter(cv$perf, ErrName == "BER")[-1]
 concat_enetErrTest_tuneConcat <- c(result$perfTest["BER"], NA)
 names(concat_enetErrTest_tuneConcat) <- names(concat_enetErrTrain_tuneConcat)
@@ -178,8 +181,10 @@ rbind(concat_enetErrTrain_tuneConcat, concat_enetErrTest_tuneConcat) %>%
 
 
 ```r
+alphaList = list(1, 1)
+lambdaList = list(NULL, NULL)
 ## Build panel and estimate test performance
-ensembleMod <- ensembleEnet(X.train, Y.train, alpha=1, lambda=NULL, X.test, Y.test)
+ensembleMod <- ensembleEnet(X.train, Y.train, alphaList = alphaList, lambdaList = lambdaList, X.test = X.test, Y.test = Y.test, filter = "none", topranked = 50)
 ensembleResult <- ensembleMod$result %>% zip_nPure()
 ensemblePanel <- ensembleResult$enet.panel
 ensemblePanel
@@ -218,7 +223,7 @@ ensemblePanel
 ensembleTrain <- perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
 ensemble_enetLength <- lapply(ensemblePanel, length)
 ensemble_enetErrTrain_tuneEnsemble <- filter(ensembleTrain$perf, ErrName == "BER")[-1]
-ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$error["BER"], NA)
+ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$perfTest["BER"], NA)
 names(ensemble_enetErrTest_tuneEnsemble) <- names(ensemble_enetErrTrain_tuneEnsemble)
 
 ## Ensemble panel error rate
@@ -228,10 +233,10 @@ rbind(ensemble_enetErrTrain_tuneEnsemble, ensemble_enetErrTest_tuneEnsemble) %>%
 
 ```
 ## # A tibble: 2 × 3
-##        Mean        SD   Set
-##       <dbl>     <dbl> <chr>
-## 1 0.2440741 0.0518545 Train
-## 2 0.1222222        NA  Test
+##        Mean         SD   Set
+##       <dbl>      <dbl> <chr>
+## 1 0.2422222 0.06494907 Train
+## 2 0.1222222         NA  Test
 ```
 
 ## DIABLO classifier
@@ -322,7 +327,7 @@ rbind(diablo_enetErrTrain, diablo_enetErrTest) %>%
 
 ```r
 datList = list(ensemble = as.character(unlist(ensemblePanel)), diablo=as.character(unlist(diabloFeat)))
-venndiagram(datList = datList, circleNames = c("Ensemble", "DIABLO"))
+amritr::venndiagram(datList = datList, circleNames = c("Ensemble", "DIABLO"))
 ```
 
 ![](README_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
