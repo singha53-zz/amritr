@@ -14,8 +14,11 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALS
 ```
 
 ```{r loadLibraries}
+#library(devtools)
+#install_github("singha53/amritr")
 library(amritr)
 library(mixOmics)
+library(dplyr); library(tidyr);
 ```
 
 #biomarker pipeline()
@@ -116,17 +119,19 @@ rbind(concat_enetErrTrain_tuneConcat, concat_enetErrTest_tuneConcat) %>%
 ### Description of classifier
 
 ```{r}
+alphaList = list(1, 1)
+lambdaList = list(NULL, NULL)
 ## Build panel and estimate test performance
-ensembleMod <- amritr::ensembleEnet(X.train, Y.train, alpha=1, lambda=NULL, X.test, Y.test)
+ensembleMod <- ensembleEnet(X.train, Y.train, alphaList = alphaList, lambdaList = lambdaList, X.test = X.test, Y.test = Y.test, filter = "none", topranked = 50)
 ensembleResult <- ensembleMod$result %>% zip_nPure()
 ensemblePanel <- ensembleResult$enet.panel
 ensemblePanel
 
 ## Estimate panel performance using cross-validation
-ensembleTrain <- amritr::perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
+ensembleTrain <- perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter, threads = cpus, progressBar = TRUE)
 ensemble_enetLength <- lapply(ensemblePanel, length)
 ensemble_enetErrTrain_tuneEnsemble <- filter(ensembleTrain$perf, ErrName == "BER")[-1]
-ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$error["BER"], NA)
+ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$perfTest["BER"], NA)
 names(ensemble_enetErrTest_tuneEnsemble) <- names(ensemble_enetErrTrain_tuneEnsemble)
 
 ## Ensemble panel error rate

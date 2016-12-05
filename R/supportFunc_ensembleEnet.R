@@ -10,11 +10,11 @@
 #' @export
 ensembleEnet = function(X.train, Y.train, alphaList, lambdaList, X.test, Y.test, filter, topranked){
   if(is.null(X.test)){  ## run if no test set is provided (only build ensemble models)
-    result <- mapply(function(X.train, X.test, alpha, lambda) {
+    result <- mapply(function(X.train, alpha, lambda) {
       enet(X = X.train, Y = Y.train, alpha = alpha, lambda = lambda, family = "multinomial", X.test = NULL,
         Y.test = NULL, filter = filter, topranked = topranked)
-    }, X.train = X.train, X.test = X.test, alpha = alphaList, lambda = lambdaList, SIMPLIFY = FALSE)
-    error <- NA
+    }, X.train = X.train, alpha = alphaList, lambda = lambdaList, SIMPLIFY = FALSE)
+    Y.vote <- error <- NA
   } else { ## run if test set is provided
     if(length(X.train) == length(X.test)){   ## if the same numbers of train and test datasets are available
       result <- mapply(function(X.train, X.test, alpha, lambda) {
@@ -68,8 +68,7 @@ ensembleEnet = function(X.train, Y.train, alphaList, lambdaList, X.test, Y.test,
     }
   }
 
-  return(list(result = result, Y.vote = Y.vote, perfTest = error, X.train = X.train,
-    Y.train = Y.train, alphaList = alphaList, lambdaList = lambdaList, filter = filter, topranked = topranked))
+  return(list(result = result, Y.vote = Y.vote, perfTest = error, X.train = X.train, Y.train = Y.train, alphaList = alphaList, lambdaList = lambdaList, filter = filter, topranked = topranked))
 }
 
 #' Estimate test error using repeated cross-validation
@@ -105,9 +104,10 @@ perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, thread
         M = M, folds = foldsi, progressBar = progressBar, filter = filter, topranked = topranked)
     }, X, Y, alpha, lambda, M, progressBar, filter, topranked) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
-    perf <- do.call(rbind, cv$error) %>% as.data.frame %>% gather(ErrName,
-      Err) %>% dplyr::group_by(ErrName) %>% dplyr::summarise(Mean = mean(Err),
-        SD = sd(Err))
+    perf <- do.call(rbind, cv$error) %>% as.data.frame %>%
+      tidyr::gather(ErrName, Err) %>%
+      dplyr::group_by(ErrName) %>%
+      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
   }
   else {
     folds = split(1:n, rep(1:n, length = n))
