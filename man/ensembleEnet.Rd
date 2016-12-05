@@ -2,16 +2,23 @@
 % Please edit documentation in R/supportFunc_ensembleEnet.R
 \name{ensembleEnet}
 \alias{ensembleEnet}
-\title{table of classification performances}
+\title{Build ensemble classification panel}
 \usage{
-ensembleEnet(X.train, Y.train, alpha, lambda, X.test, Y.test)
+ensembleEnet(X.train, Y.train, alphaList, lambdaList, X.test, Y.test, filter,
+  topranked)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X.train}{- list of training datasets (nxpi); i number of elements}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{Y.train}{- n-vector of class labels}
 
-\item{direction}{= "auto", ">", "<"}
+\item{X.test}{- list of test datasets (nxpi); i number of elements}
+
+\item{Y.test}{- n-vector of class labels}
+
+\item{alpha}{= list of alpha values}
+
+\item{lambda}{= list of lambda values}
 }
 \description{
 takes in predited weights and true labels and determines performance characterisitcs

@@ -2,19 +2,25 @@
 % Please edit documentation in R/supportFunc_ensembleEnet.R
 \name{perfEnsemble}
 \alias{perfEnsemble}
-\title{table of classification performances}
+\title{Estimate test error using repeated cross-validation}
 \usage{
 perfEnsemble(object, validation = "Mfold", M = M, iter = iter,
   threads = threads, progressBar = TRUE)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{object}{- ensembleEnet object}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{validation}{= Mfold or loo}
 
-\item{direction}{= "auto", ">", "<"}
+\item{M}{- # of folds}
+
+\item{iter}{- Number of iterations of cross-validation}
+
+\item{threads}{- # of cores, running each iteration on a separate node}
+
+\item{progressBar}{= TRUE (show progress bar or not)}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Estimate test error using repeated cross-validation
 }
 

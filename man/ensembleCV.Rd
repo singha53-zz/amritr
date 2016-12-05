@@ -2,18 +2,30 @@
 % Please edit documentation in R/supportFunc_ensembleEnet.R
 \name{ensembleCV}
 \alias{ensembleCV}
-\title{table of classification performances}
+\title{Estimate cross-validation using cross-validation}
 \usage{
-ensembleCV(X, Y, alpha, lambda, M, folds, progressBar)
+ensembleCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X}{- list of training datasets (nxpi); i number of elements}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{Y}{- n-vector of class labels}
 
-\item{direction}{= "auto", ">", "<"}
+\item{alpha}{= list of alpha values}
+
+\item{lambda}{= list of lambda values}
+
+\item{M}{- # of folds}
+
+\item{folds}{- list of length M, where each element contains the indices for samples for a given fold}
+
+\item{progressBar}{(TRUE/FALSE) - show progress bar or not}
+
+\item{filter}{- "none" or "p.value"}
+
+\item{topranked}{- # of significant features to use to build classifier}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Estimate cross-validation using cross-validation
 }
 
