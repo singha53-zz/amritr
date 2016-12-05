@@ -64,15 +64,15 @@ integrativePanels = function(X.train, Y.train, X.test, Y.test, concat_alpha, con
   }
 
   ## Ensemble-Enet
-  ensembleMod <- amritr::ensembleEnet(X.train = X.train, Y.train = Y.train, alphaList = alphaList,
-    lambdaList = lambdaList, X.test = X.test, Y.test = Y.test, filter = "none", topranked = 50)
+  ensembleMod <- amritr::ensembleEnet(X.train = X.train, Y.train = Y.train, alphaList = single_alphaList,
+    lambdaList = single_lambdaList, X.test = X.test, Y.test = Y.test, filter = "none", topranked = 50)
   ensembleResult <- ensembleMod$result %>% zip_nPure()
   ensemble_enetPanel <- ensembleResult$enet.panel
 
   ## Estimate panel performance using cross-validation
   ensembleTrain <- perfEnsemble(object=ensembleMod, validation = "Mfold", M = M, iter = iter,
     threads = cpus, progressBar = TRUE)
-  ensemble_enetLength <- lapply(ensemblePanel, length)
+  ensemble_enetLength <- lapply(ensemble_enetPanel, length)
   ensemble_enetErrTrain_tuneEnsemble <- filter(ensembleTrain$perf, ErrName == "BER")[-1]
   ensemble_enetErrTest_tuneEnsemble <- c(ensembleMod$perfTest["BER"], NA)
   names(ensemble_enetErrTest_tuneEnsemble) <- names(ensemble_enetErrTrain_tuneEnsemble)
@@ -93,6 +93,7 @@ integrativePanels = function(X.train, Y.train, X.test, Y.test, concat_alpha, con
     scheme = "centroid")
   diabloPanel <- lapply(TCGA.block.splsda$loadings[-(length(X.train)+1)], function(x)
     unique(as.character(as.matrix(apply(x, 2, function(i) names(i)[which(i != 0)])))))
+
   ## training error
   cv <- perf(TCGA.block.splsda, validation = "Mfold", folds = M, cpus = cpus, nrepeat = iter)
   err <- extractErr(cv)
@@ -100,24 +101,35 @@ integrativePanels = function(X.train, Y.train, X.test, Y.test, concat_alpha, con
   diablo_enetErrTrain <- err %>% filter(Type == "centroids.dist", Class == "Overall.BER",
     EnsembleMode == "wMajVote", Dataset == "DIABLO", Comp == paste("comp", ncomp, sep = "."))
   diablo_enetErrTrain <- diablo_enetErrTrain[c("meanErr", "sdErr")]
+
   ## test error
-  diabloTest <- predict(TCGA.block.splsda, X.test, method = "all")
-  diabloTestConsensus <- lapply(diabloTest$WeightedVote, function(i){
-    predY <- apply(i, 2, function(z){
-      temp <- table(factor(z, levels = levels(Y.test)), Y.test)
-      diag(temp) <- 0
-      error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
-      names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
-      error
+  if(is.null(X.test)){
+    diablo_enetErrTest <- c(NA, NA)
+    names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
+    ## DIABLO panel error rate
+    diabloErr <- rbind(diablo_enetErrTrain, diablo_enetErrTest)
+    colnames(diabloErr) <- c("Mean", "SD")
+    diabloErr$Set <- c("Train", "Test")
+    diabloErr$Method <- "DIABLO"
+  } else {
+    diabloTest <- predict(TCGA.block.splsda, X.test, method = "all")
+    diabloTestConsensus <- lapply(diabloTest$WeightedVote, function(i){
+      predY <- apply(i, 2, function(z){
+        temp <- table(factor(z, levels = levels(Y.test)), Y.test)
+        diag(temp) <- 0
+        error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test), mean(colSums(temp)/summary(Y.test)))
+        names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+        error
+      })
     })
-  })
-  diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = "")], NA)
-  names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
-  ## DIABLO panel error rate
-  diabloErr <- rbind(diablo_enetErrTrain, diablo_enetErrTest)
-  colnames(diabloErr) <- c("Mean", "SD")
-  diabloErr$Set <- c("Train", "Test")
-  diabloErr$Method <- "DIABLO"
+    diablo_enetErrTest <- c(diabloTestConsensus$centroids.dist["BER", paste("comp", ncomp, sep = "")], NA)
+    names(diablo_enetErrTest) <- names(diablo_enetErrTrain)
+    ## DIABLO panel error rate
+    diabloErr <- rbind(diablo_enetErrTrain, diablo_enetErrTest)
+    colnames(diabloErr) <- c("Mean", "SD")
+    diabloErr$Set <- c("Train", "Test")
+    diabloErr$Method <- "DIABLO"
+  }
 
   ## Error rates
   error <- rbind(concatErr, ensembleErr, diabloErr)
