@@ -33,7 +33,7 @@ supportVectorMachine = function (X, Y, X.test = NULL, Y.test = NULL, family = "b
   }
   svm.panel <- as.character(featIndex[colnames(X1)])
   y.train0 <- Y[rownames(X1)]
-  fit = svm(y.train0 ~ ., data = X1, importance = TRUE, proximity = TRUE)
+  fit = svm(y.train0 ~ ., data = X1, importance = TRUE, proximity = TRUE, kernel = "linear")
   if (!is.null(X.test)) {
     colnames(X.test) <- paste("Feature", 1:ncol(X1), sep = ".")
     predictResponse <- predict(fit, as.matrix(X.test), type = "response")
