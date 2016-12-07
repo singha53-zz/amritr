@@ -33,11 +33,12 @@ supportVectorMachine = function (X, Y, X.test = NULL, Y.test = NULL, family = "b
   }
   svm.panel <- as.character(featIndex[colnames(X1)])
   y.train0 <- Y[rownames(X1)]
-  fit = svm(y.train0 ~ ., data = X1, importance = TRUE, proximity = TRUE, kernel = "linear")
+  fit = svm(y.train0 ~ ., data = X1, probability = TRUE,
+    kernel = "linear")
   if (!is.null(X.test)) {
-    colnames(X.test) <- paste("Feature", 1:ncol(X1), sep = ".")
+    colnames(X.test) <- paste("f", 1:ncol(X1), sep = "_")
     predictResponse <- predict(fit, as.matrix(X.test), type = "response")
-    probs <- predict(fit, as.matrix(X.test), type = "vote")[,
+    probs <- attr(predict(fit, as.matrix(X.test), probability = TRUE),"probabilities")[,
       levels(Y)[2]]
     if (family == "binomial") {
       perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)),
@@ -61,6 +62,7 @@ supportVectorMachine = function (X, Y, X.test = NULL, Y.test = NULL, family = "b
     svm.panel = svm.panel, predictResponse = predictResponse,
     family = family, filter = filter, topranked = topranked))
 }
+
 
 #' interal function (svm cross-validation)
 #'
