@@ -4,7 +4,7 @@
 \alias{pandaxBoot}
 \title{Caculate differential regulatory network statistics}
 \usage{
-pandaxBoot(motif, geneExp, regExp, phenotype, nperms)
+pandaxBoot(motif, geneExp, regExp, phenotype, nperms, threads)
 }
 \arguments{
 \item{motif}{3 column matrix, 1st column (regVar), 2nd column (gene), 3rd (weight)}

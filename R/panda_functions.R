@@ -7,27 +7,37 @@
 #' @param phenotype factor specifiying the group of each sample
 #' @param nperms # of permutations
 #' @export
-pandaxBoot = function(motif, geneExp, regExp, phenotype, nperms){
-  diff <- pandax(motif, geneExp, regExp, phenotype) ## difference in regulatory coefficients
+pandaxBoot = function (motif, geneExp, regExp, phenotype, nperms, threads){
+  ## Estimate signal
+  diff <- pandax(motif, geneExp, regExp, phenotype)
 
-  ## Estimate standard deviation
-  pandaxSD = lapply(1:nperms, function(i){
-    pandax(motif, geneExp, regExp, phenotype=sample(phenotype))
+  ## Estimate noise
+  phenotype <- lapply(1:nperms, function(i) sample(phenotype))
+  require(parallel)
+  cl <- parallel::makeCluster(mc <- getOption("cl.cores",  threads))
+  parallel::clusterExport(cl, varlist = c("pandax", "pandaModif", "nperms",
+    "normalizeNetwork", "tanimoto", "update.diagonal", "motif", "geneExp",
+    "regExp", "phenotype"), envir = environment())
+  pandaxSD <- parallel::parLapply(cl, phenotype, function(phenotypei,
+    motif, geneExp, regExp, phenotype) {
+    library(dplyr); library(tidyr); library(matrixStats);
+    pandax(motif=motif, geneExp=geneExp, regExp=regExp, phenotype = phenotypei)
+  }, motif, geneExp, regExp, phenotype) %>% amritr::zip_nPure()
+  parallel::stopCluster(cl)
+
+  bootStd <- lapply(pandaxSD, function(i){
+    bootStd0 <- do.call(rbind, i) %>% as.data.frame %>%
+      mutate(regVar = rownames(.)) %>% group_by(regVar) %>%
+      summarise_each(funs(sd))
+    bootStd <- as.matrix(bootStd0[, -1])
+    rownames(bootStd) <- bootStd0$regVar
+    bootStd
   })
-  bootStd0 <- do.call(rbind, pandaxSD) %>% as.data.frame %>%
-    mutate(regVar = rownames(.)) %>%
-    group_by(regVar) %>% summarise_each(funs(sd))
-  bootStd <- as.matrix(bootStd0[, -1])
-  rownames(bootStd) <- bootStd0$regVar
 
-  fc <- diff %>% as.data.frame %>%  mutate(regVar = rownames(.)) %>% gather(Gene, fc, -regVar)
-  std <- bootStd %>% as.data.frame %>%  mutate(regVar = rownames(.)) %>% gather(Gene, sd, -regVar)
-  all(fc$regVar == std$regVar)
-  all(fc$Gene == std$Gene)
-
-  s <- data.frame(gene = fc$Gene, regVar = fc$regVar,
-    statistic = fc$fc/std$sd)
-  s
+  ## Estimate singal to noise ratio
+  snr <- rbind(cbind(diff$regNetDiff/bootStd$regNetDiff, diff$tfCoopNetworkDiff/bootStd$tfCoopNetworkDiff),
+    cbind(diff$geneCoregDiff/bootStd$geneCoregDiff, t(diff$regNetDiff/bootStd$regNetDiff)))
+  snr
 }
 
 #' Caculate difference between regulatory coefficients of the two groups
@@ -38,27 +48,27 @@ pandaxBoot = function(motif, geneExp, regExp, phenotype, nperms){
 #' @param regulatory expression (regVar by sample)
 #' @param phenotype factor specifiying the group of each sample
 #' @export
-pandax = function(motif, geneExp, regExp, phenotype){
-  ## both expr and ppi can be expression matrices (samples in columns)
-  ## split gene expression into 2 datasets (for each group)
+pandax = function (motif, geneExp, regExp, phenotype){
   lvls <- levels(phenotype)
   expr1 <- geneExp[, phenotype == lvls[1]]
   expr2 <- geneExp[, phenotype == lvls[2]]
-  ## split regulatory expression in 2 datasets (for each group)
   regexp1 <- cor(t(regExp[, phenotype == lvls[1]])) %>% as.data.frame %>%
-    mutate(miRNA = rownames(.)) %>%
-    gather(miRNA1, Exp, -miRNA)
+    mutate(miRNA = rownames(.)) %>% gather(miRNA1, Exp, -miRNA)
   regexp2 <- cor(t(regExp[, phenotype == lvls[2]])) %>% as.data.frame %>%
-    mutate(miRNA = rownames(.)) %>%
-    gather(miRNA1, Exp, -miRNA)
+    mutate(miRNA = rownames(.)) %>% gather(miRNA1, Exp, -miRNA)
+  ## Run PANDA for each phenotype
+  pandaGroup1 <- pandaModif(motif = motif, expr = expr1, ppi = regexp1,
+    alpha = 0.1, hamming = 0.01, iter = NA)
+  pandaGroup2 <- pandaModif(motif = motif, expr = expr2, ppi = regexp2,
+    alpha = 0.1, hamming = 0.01, iter = NA)
+  ## Gene Co-regulation
+  geneCoregDiff <-  pandaGroup2$geneCoreg - pandaGroup1$geneCoreg
+  regNetDiff <- pandaGroup2$regulatoryNetwork - pandaGroup1$regulatoryNetwork
+  tfCoopNetworkDiff <- pandaGroup2$tfCoopNetwork - pandaGroup1$tfCoopNetwork
 
-  ## PANDA
-  regNet1 <- pandaModif(motif = motif, expr = expr1, ppi = regexp1, alpha = 0.1, hamming = 0.01, iter = NA)$regNet
-  regNet2 <- pandaModif(motif = motif, expr = expr2, ppi = regexp2, alpha = 0.1, hamming = 0.01, iter = NA)$regNet
-
-  diff <- regNet2-regNet1
-  diff
+  return(list(geneCoregDiff = geneCoregDiff, regNetDiff = regNetDiff, tfCoopNetworkDiff = tfCoopNetworkDiff))
 }
+
 
 #' run PANDA (calculate geneCoreg, regNet and co-operative matrices)
 #'
@@ -68,7 +78,8 @@ pandax = function(motif, geneExp, regExp, phenotype){
 #' @param regulatory expression (regVar by sample)
 #' @param phenotype factor specifiying the group of each sample
 #' @export
-pandaModif = function(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.01, iter = NA){
+pandaModif = function (motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.01,
+  iter = NA){
   expr <- expr[which(rownames(expr) %in% motif[, 2]), ]
   motif <- motif[which(motif[, 2] %in% rownames(expr)), ]
   expr <- expr[order(rownames(expr)), ]
@@ -86,7 +97,8 @@ pandaModif = function(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.0
   colnames(regulatoryNetwork) <- gene.names
   rownames(regulatoryNetwork) <- tf.names
   tfCoopNetwork <- diag(num.TFs)
-  ppi <- ppi[which(ppi[, 1] %in% tf.names & ppi[, 2] %in% tf.names), ]
+  ppi <- ppi[which(ppi[, 1] %in% tf.names & ppi[, 2] %in% tf.names),
+    ]
   Idx1 <- match(ppi[, 1], tf.names)
   Idx2 <- match(ppi[, 2], tf.names)
   Idx <- (Idx2 - 1) * num.TFs + Idx1
@@ -95,13 +107,9 @@ pandaModif = function(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.0
   tfCoopNetwork[Idx] <- ppi[, 3]
   colnames(tfCoopNetwork) <- tf.names
   rownames(tfCoopNetwork) <- tf.names
-
-  ## scale adjacency matrices
   regulatoryNetwork = normalizeNetwork(regulatoryNetwork)
   tfCoopNetwork = normalizeNetwork(tfCoopNetwork)
   geneCoreg = normalizeNetwork(geneCoreg)
-
-  ## generete co-exp, regulatory and co-op matrices
   minusAlpha = 1 - alpha
   step = 0
   hamming_cur = 1
@@ -127,9 +135,10 @@ pandaModif = function(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.0
     geneCoreg = minusAlpha * geneCoreg + alpha * CoReg2
     step = step + 1
   }
-
-  return(list(geneCoreg=geneCoreg, regNet=regulatoryNetwork, tfCoopNetwork=tfCoopNetwork))
+  return(list(geneCoreg = geneCoreg, regulatoryNetwork = regulatoryNetwork,
+    tfCoopNetwork = tfCoopNetwork))
 }
+
 
 #' normalizeNetwork
 #'
