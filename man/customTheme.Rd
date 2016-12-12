@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R, R/supportFunc_ggplot2.R
 \name{customTheme}
 \alias{customTheme}
-\title{table of classification performances}
+\title{customeTheme fucntion for ggplot}
 \usage{
 customTheme(sizeStripFont, xAngle, hjust, vjust, xSize, ySize, xAxisSize,
   yAxisSize)
@@ -11,11 +11,21 @@ customTheme(sizeStripFont, xAngle, hjust, vjust, xSize, ySize, xAxisSize,
   yAxisSize)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{sizeStripFont}{font of size of facet labels}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{xAngle}{angle of x-axis labels}
 
-\item{direction}{= "auto", ">", "<"}
+\item{hjust}{horizontal justification 0-left, 0.5-center, 1-right}
+
+\item{vjust}{vertical justification 0-low, 0.5-middle, 1-high}
+
+\item{xSize}{font size of x-axis label}
+
+\item{ySize}{font size of y-axis label}
+
+\item{xAxisSize}{font size of x-axis label title}
+
+\item{yAxisSize}{fotn size of y-axis label title}
 
 \item{weights}{are the predicted scores/probablities of test data}
 
