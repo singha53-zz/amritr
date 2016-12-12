@@ -1,9 +1,14 @@
-#' table of classification performances
+#' customeTheme fucntion for ggplot
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
+#' @param sizeStripFont font of size of facet labels
+#' @param xAngle angle of x-axis labels
+#' @param hjust horizontal justification 0-left, 0.5-center, 1-right
+#' @param vjust vertical justification 0-low, 0.5-middle, 1-high
+#' @param xSize font size of x-axis label
+#' @param ySize font size of y-axis label
+#' @param xAxisSize font size of x-axis label title
+#' @param yAxisSize fotn size of y-axis label title
 #' @export
 customTheme = function(sizeStripFont, xAngle, hjust, vjust, xSize,
     ySize, xAxisSize, yAxisSize) {
