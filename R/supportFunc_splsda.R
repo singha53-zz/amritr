@@ -10,7 +10,9 @@
 #' @param filter apply no filter "none" or a p.value filter "p.value
 #' @param topranked select the top significant variables based on limma
 #' @export
-sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, filter = "p.value", topranked = 50){
+sPLSDA = function (X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL,
+  filter = "p.value", topranked = 50)
+{
   if (filter == "none") {
     X.train1 <- X.train
   }
@@ -19,21 +21,16 @@ sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, 
     fit <- eBayes(lmFit(t(X.train), design))
     top <- topTable(fit, coef = 2, adjust.method = "BH",
       n = nrow(fit))
-    X.train1 <- X.train[, rownames(top)[1:topranked],
-      drop = FALSE]
+    X.train1 <- X.train[, rownames(top)[1:topranked], drop = FALSE]
   }
-
   fit <- mixOmics::splsda(X = X.train1, Y = Y.train, keepX = keepX,
     ncomp = ncomp)
   panel <- unique(as.character(as.matrix(apply(fit$loadings$X,
     2, function(i) names(which(i != 0))))))
-
-  if(!is.null(X.test)){
-    predMod <- predict(object = fit, newdata = X.test[, colnames(X.train1)], dist = "all")
-
-
-
-    errorRate <- lapply(predMod$class, function(i){
+  if (!is.null(X.test)) {
+    predMod <- predict(object = fit, newdata = X.test[, colnames(X.train1)],
+      dist = "all")
+    errorRate <- lapply(predMod$class, function(i) {
       predictResponse <- factor(i[, ncomp], levels = levels(Y.test))
       trueLabels = Y.test
       mat <- table(trueLabels, predictResponse)
@@ -47,16 +44,16 @@ sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, 
       perf
     }) %>% do.call(rbind, .) %>% as.data.frame %>% mutate(Method = rownames(.)) %>%
       tidyr::gather(Index, Value, -Method)
-
-    ## Classification performances
-    probs <- predMod$predict[, , ncomp][,levels(Y)[2]]
-    perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = Y.test)
-  } else {
+    probs <- predMod$predict[, , ncomp][, levels(Y)[2]]
+    perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)),
+      trueLabels = Y.test)
+  }
+  else {
     predictResponse <- probs <- perfTest <- errorRate <- NA
   }
-  return(list(X = X, Y = Y, fit = fit, panel = panel, predictResponse = predictResponse,
-    probs = probs, perfTest = perfTest, ncomp = ncomp,
-    errorRate = errorRate, filter = filter, topranked = topranked))
+  return(list(X.train = X.train, Y.train = Y.train, fit = fit, panel = panel, predictResponse = predictResponse,
+    probs = probs, perfTest = perfTest, ncomp = ncomp, keepX = keepX, errorRate = errorRate,
+    filter = filter, topranked = topranked))
 }
 
 #' CV function for a sPLSDA model
@@ -152,11 +149,12 @@ sPLSDACV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked
 #' @param threads number of cores to use to parrallel the CV
 #' @param progressBar display progress bar or not (TRUE/FALSE)
 #' @export
-perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
+perf.sPLSDA = function(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
+  threads = 4, progressBar = TRUE){
   library(dplyr)
   library(tidyr)
-  X = object$X
-  Y = object$Y
+  X = object$X.train
+  Y = object$Y.train
   n = nrow(X)
   keepX = object$keepX
   ncomp = object$ncomp
@@ -165,78 +163,105 @@ perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
-    cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist = c("sPLSDACV", "X", "Y", "keepX", "ncomp",
-      "M", "folds", "progressBar", "filter", "topranked"), envir = environment())
+    cl <- parallel::makeCluster(mc <- getOption("cl.cores",
+      threads))
+    parallel::clusterExport(cl, varlist = c("sPLSDACV", "X",
+      "Y", "keepX", "ncomp", "M", "folds", "progressBar",
+      "filter", "topranked"), envir = environment())
     cv <- parallel::parLapply(cl, folds, function(foldsi,
       X, Y, keepX, ncomp, M, progressBar, filter, topranked) {
-      library(mixOmics); library(dplyr); library(amritr);
-      sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = foldsi,
-        progressBar = progressBar, filter = filter, topranked = topranked)
-    }, X, Y, keepX, ncomp, M, progressBar, filter, topranked) %>% amritr::zip_nPure()
+      library(mixOmics)
+      library(dplyr)
+      library(amritr)
+      sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp,
+        M = M, folds = foldsi, progressBar = progressBar,
+        filter = filter, topranked = topranked)
+    }, X, Y, keepX, ncomp, M, progressBar, filter, topranked) %>%
+      amritr::zip_nPure()
     parallel::stopCluster(cl)
-
-    ## CV panels
-    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)), decreasing = TRUE)]/(M*iter)
-
-    ## error rate
-    errorRate <- do.call(rbind, cv$errorRate) %>% dplyr::group_by(Method, Index) %>%
-      dplyr::summarise(Mean = mean(Value), SD = sd(Value))
-
-    ## classification performance measures
+    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)),
+      decreasing = TRUE)]/(M * iter)
+    errorRate <- do.call(rbind, cv$errorRate) %>% dplyr::group_by(Method,
+      Index) %>% dplyr::summarise(Mean = mean(Value), SD = sd(Value))
     perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
       gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
       dplyr::summarise(Mean = mean(Err), SD = sd(Err))
   } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = folds,
-      progressBar = progressBar, filter = filter, topranked = topranked)
-    ## CV panels
-    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)), decreasing = TRUE)]/M
-
-    ## error rate
-    errorRate <- cv$errorRate %>% as.data.frame %>%
-      dplyr::group_by(Method, Index) %>%
-      dplyr::summarise(Mean = mean(Value), SD = sd(Value))
-
-    ## classification performance measures
-    perf <- data.frame(ErrName = names(cv$perf),
-      Mean = as.numeric(cv$perf), SD = NA)
+    cv <- sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp,
+      M = M, folds = folds, progressBar = progressBar,
+      filter = filter, topranked = topranked)
+    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)),
+      decreasing = TRUE)]/M
+    errorRate <- cv$errorRate %>% as.data.frame %>% dplyr::group_by(Method,
+      Index) %>% dplyr::summarise(Mean = mean(Value), SD = sd(Value))
+    perf <- data.frame(ErrName = names(cv$perf), Mean = as.numeric(cv$perf),
+      SD = NA)
   }
+  if (nlevels(Y) == 2) {
+    if(validation == "Mfold"){
+      colPalette <- c("#66C2A5", "#FC8D62")
+      probDat <- lapply(cv$probsList, unlist) %>% lapply(.,
+        function(i) i[names(Y)]) %>% do.call(rbind, .) %>%
+        as.data.frame %>% gather(Sample, Prob) %>% mutate(phenotype = Y[Sample]) %>%
+        group_by(phenotype, Sample) %>% dplyr::summarise(Mean = mean(Prob),
+          SD = sd(Prob)) %>% arrange(Mean) %>% mutate(Sample = factor(as.character(Sample),
+            levels = as.character(Sample)))
+      probPlot <- probDat %>% ggplot(aes(x = Sample, y = Mean,
+        color = phenotype)) + geom_point() + geom_rect(aes(xmin = -Inf,
+          xmax = Inf, ymin = -Inf, ymax = subset(perf, ErrName ==
+              "cutoff")$Mean), fill = colPalette[1], alpha = 0.01) +
+        geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = subset(perf,
+          ErrName == "cutoff")$Mean, ymax = Inf), fill = colPalette[2],
+          alpha = 0.01) + geom_point() + geom_errorbar(aes(ymin = Mean -
+              SD, ymax = Mean + SD)) + geom_hline(yintercept = subset(perf,
+                ErrName == "cutoff")$Mean, linetype = "dashed") +
+        customTheme(sizeStripFont = 10, xAngle = 90, hjust = 1,
+          vjust = 0.5, xSize = 10, ySize = 10, xAxisSize = 10,
+          yAxisSize = 10) + ylab(paste0("AUC Mean+/-SD ",
+            "(", iter, "x", M, "-fold CV)")) + xlab("Observations") +
+        ggtitle(paste(paste(perf$ErrName, round(perf$Mean,
+          2), sep = "="), collapse = ", ")) + scale_color_manual(values = colPalette,
+            name = "True labels")
+    } else {
+      colPalette <- c("#66C2A5", "#FC8D62")
+      probDat <- data.frame(Mean = unlist(cv$probsList),
+        Sample = names(Y)[unlist(folds)],
+        SD = rep(NA, length(folds)),
+        phenotype = Y[unlist(folds)]) %>%
+        arrange(phenotype, Mean) %>%
+        mutate(Sample = factor(as.character(Sample),
+          levels = as.character(Sample)))
+      probPlot <- probDat %>% ggplot(aes(x = Sample, y = Mean,
+        color = phenotype)) + geom_point() + geom_rect(aes(xmin = -Inf,
+          xmax = Inf, ymin = -Inf, ymax = subset(perf, ErrName ==
+              "cutoff")$Mean), fill = colPalette[1], alpha = 0.01) +
+        geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = subset(perf,
+          ErrName == "cutoff")$Mean, ymax = Inf), fill = colPalette[2],
+          alpha = 0.01) + geom_point() + geom_errorbar(aes(ymin = Mean -
+              SD, ymax = Mean + SD)) + geom_hline(yintercept = subset(perf,
+                ErrName == "cutoff")$Mean, linetype = "dashed") +
+        customTheme(sizeStripFont = 10, xAngle = 90, hjust = 1,
+          vjust = 0.5, xSize = 10, ySize = 10, xAxisSize = 10,
+          yAxisSize = 10) + ylab(paste0("AUC Mean+/-SD ",
+            "(", iter, "x", M, "-fold CV)")) + xlab("Observations") +
+        ggtitle(paste(paste(perf$ErrName, round(perf$Mean,
+          2), sep = "="), collapse = ", ")) + scale_color_manual(values = colPalette,
+            name = "True labels")
+    }
 
-  if(nlevels(Y) == 2){
-    colPalette <- c("#66C2A5", "#FC8D62")
-    ## Generate summarise plots
-    ## plot prob vs. samples plot
-    probDat <- lapply(cv$probsList, unlist) %>% lapply(., function(i) i[names(Y)]) %>%
-      do.call(rbind, .) %>% as.data.frame %>% gather(Sample, Prob) %>%
-      mutate(phenotype = Y[Sample]) %>%
-      group_by(phenotype, Sample) %>% dplyr::summarise(Mean = mean(Prob), SD = sd(Prob)) %>%
-      arrange(Mean) %>%
-      mutate(Sample = factor(as.character(Sample), levels = as.character(Sample)))
-    probPlot <- probDat %>% ggplot(aes(x = Sample, y = Mean, color = phenotype)) + geom_point() +
-      geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = subset(perf, ErrName == "cutoff")$Mean), fill = colPalette[1], alpha = 0.01) +
-      geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = subset(perf, ErrName == "cutoff")$Mean, ymax = Inf), fill = colPalette[2], alpha = 0.01) +
-      geom_point() +
-      geom_errorbar(aes(ymin = Mean-SD, ymax = Mean+SD)) +
-      geom_hline(yintercept = subset(perf, ErrName == "cutoff")$Mean, linetype = "dashed") +
-      customTheme(sizeStripFont = 10, xAngle = 90, hjust = 1, vjust = 0.5, xSize = 10,
-        ySize = 10, xAxisSize = 10, yAxisSize = 10) +
-      ylab(paste0("AUC Mean+/-SD ", "(", iter, "x", M, "-fold CV)")) +
-      xlab("Observations") +
-      ggtitle(paste(paste(perf$ErrName, round(perf$Mean, 2), sep = "="),
-        collapse=", ")) + scale_color_manual(values=colPalette, name = "True labels")
   }
-
   result = list()
   result$predictResponseList = cv$predictResponseList
-  result$probsList  = cv$probsList
+  result$probsList = cv$probsList
   result$probsList = cv$probsList
   result$panelFreq = panelFreq
   result$errorRate = errorRate
   result$perf = perf
-  if(nlevels(Y) == 2){result$probPlot = probPlot}
+  if (nlevels(Y) == 2) {
+    result$probPlot = probPlot
+  }
   method = "sPLSDA.mthd"
   result$meth = "sPLSDA.mthd"
   class(result) = c("perf", method)
