@@ -72,7 +72,7 @@ sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, 
 #' @param filter apply no filter "none" or a p.value filter "p.value
 #' @param topranked select the top significant variables based on limma
 #' @export
-splsdaCV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked){
+sPLSDACV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked){
   library(pROC)
   library(limma)
   library(mixOmics)
@@ -152,7 +152,7 @@ splsdaCV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked
 #' @param threads number of cores to use to parrallel the CV
 #' @param progressBar display progress bar or not (TRUE/FALSE)
 #' @export
-perf.splsda = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
+perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
   library(dplyr)
   library(tidyr)
   X = object$X
@@ -253,7 +253,7 @@ perf.splsda = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
 #' @param validatoin "Mfold" or "loo"
 #' @param M Number of folds in the cross-validation
 #' @export
-tuned.spslda = function(X, Y, ncomp, keepXgrid, validation, M){
+tuned.sPLSDA = function(X, Y, ncomp, keepXgrid, validation, M){
   library(dplyr);
   resultPerf <- lapply(keepXgrid, function(i){
     result <- mixOmics::splsda(X, Y, keepX = rep(i, ncomp), ncomp = ncomp)
@@ -281,7 +281,7 @@ tuned.spslda = function(X, Y, ncomp, keepXgrid, validation, M){
 #' @param iter Number of times to repeat cross-validation
 #' @param progressBar = show progress bar or not
 #' @export
-perf.tuned.splsda=function (object, validation = "Mfold", M = 5, iter = 5, progressBar = TRUE){
+perf.tuned.sPLSDA=function (object, validation = "Mfold", M = 5, iter = 5, progressBar = TRUE){
   if(is.null(Y))
     stop("names(Y) should equal rownams(X)")
   for(i in 1 : nlevels(Y)){
@@ -367,7 +367,7 @@ perf.tuned.splsda=function (object, validation = "Mfold", M = 5, iter = 5, progr
 #' @param validatoin "Mfold" or "loo"
 #' @param M Number of folds in the cross-validation
 #' @export
-tuned.spsldaCV=function (X = X, Y = Y, ncomp = ncomp, folds = folds, progressBar = FALSE,
+tuned.sPLSDACV=function (X = X, Y = Y, ncomp = ncomp, folds = folds, progressBar = FALSE,
   keepXgrid = keepXgrid, validation = validation, M = M)
 {
   library(mixOmics)
