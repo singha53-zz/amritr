@@ -1,3 +1,64 @@
+#' sPLSDA function
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param X.train n1xp dataset (discovery cohort)
+#' @param Y.train vector of phenotype labels with names(Y.train) == rownames(X.train)
+#' @param keepX (# of variables to select per component)
+#' @param ncomp number of components
+#' @param X.test n2xp dataset (validaton cohort)
+#' @param Y.test vector of phenotype labels with names(Y.test) == rownames(X.test)
+#' @param filter apply no filter "none" or a p.value filter "p.value
+#' @param topranked select the top significant variables based on limma
+#' @export
+sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, filter = "p.value", topranked = 50){
+  if (filter == "none") {
+    X.train1 <- X.train
+  }
+  if (filter == "p.value") {
+    design <- model.matrix(~Y.train)
+    fit <- eBayes(lmFit(t(X.train), design))
+    top <- topTable(fit, coef = 2, adjust.method = "BH",
+      n = nrow(fit))
+    X.train1 <- X.train[, rownames(top)[1:topranked],
+      drop = FALSE]
+  }
+
+  fit <- mixOmics::splsda(X = X.train1, Y = Y.train, keepX = keepX,
+    ncomp = ncomp)
+  panel <- unique(as.character(as.matrix(apply(fit$loadings$X,
+    2, function(i) names(which(i != 0))))))
+
+  if(!is.null(X.test)){
+    predMod <- predict(object = fit, newdata = X.test[, colnames(X.train1)], dist = "all")
+
+
+
+    errorRate <- lapply(predMod$class, function(i){
+      predictResponse <- factor(i[, ncomp], levels = levels(Y.test))
+      trueLabels = Y.test
+      mat <- table(trueLabels, predictResponse)
+      mat2 <- mat
+      diag(mat2) <- 0
+      classError <- colSums(mat2)/colSums(mat)
+      er <- sum(mat2)/sum(mat)
+      ber <- mean(classError)
+      perf <- c(classError, er, ber)
+      names(perf) <- c(names(classError), "ER", "BER")
+      perf
+    }) %>% do.call(rbind, .) %>% as.data.frame %>% mutate(Method = rownames(.)) %>%
+      tidyr::gather(Index, Value, -Method)
+
+    ## Classification performances
+    probs <- predMod$predict[, , ncomp][,levels(Y)[2]]
+    perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = Y.test)
+  } else {
+    predictResponse <- probs <- perfTest <- errorRate <- NA
+  }
+  return(list(X = X, Y = Y, fit = fit, panel = panel, predictResponse = predictResponse,
+    probs = probs, perfTest = perfTest, ncomp = ncomp,
+    errorRate = errorRate, filter = filter, topranked = topranked))
+}
+
 #' CV function for a splsda model
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
@@ -81,7 +142,6 @@ splsdaCV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked
     errorRate = errorRate, perf = perf))
 }
 
-
 #' repeated CV function for a splsda model
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
@@ -100,6 +160,8 @@ perf.splsda = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
   n = nrow(X)
   keepX = object$keepX
   ncomp = object$ncomp
+  filter = object$filter
+  topranked = object$topranked
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
@@ -180,26 +242,6 @@ perf.splsda = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
   class(result) = c("perf", method)
   return(invisible(result))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #' splsda model after tuning of the number of variables
 #'
