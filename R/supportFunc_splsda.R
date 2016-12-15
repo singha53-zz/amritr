@@ -1,3 +1,206 @@
+#' CV function for a splsda model
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param X nxp dataset
+#' @param Y vector of phenotype labels with names(Y) == rownames(X)
+#' @param keepX (# of variables to select per component)
+#' @param ncomp number of components
+#' @param M Number of folds in the cross-validation
+#' @param folds list of elements (sample indices) for the M folds
+#' @param progressBar display progress bar or not (TRUE/FALSE)
+#' @param filter apply no filter "none" or a p.value filter "p.value
+#' @param topranked select the top significant variables based on limma
+#' @export
+splsdaCV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked){
+  library(pROC)
+  library(limma)
+  library(mixOmics)
+  library(OptimalCutpoints)
+  probsList <- predictResponseList <- panelList <- list()
+  if (progressBar == TRUE)
+    pb <- txtProgressBar(style = 3)
+  for (i in 1:M) {
+    if (progressBar == TRUE)
+      setTxtProgressBar(pb, i/M)
+    omit = folds[[i]]
+    X.train = X[-omit, , drop = FALSE]
+    Y.train = Y[-omit]
+    if (filter == "none") {
+      X.train1 <- X.train
+    }
+    if (filter == "p.value") {
+      design <- model.matrix(~Y.train)
+      fit <- eBayes(lmFit(t(X.train), design))
+      top <- topTable(fit, coef = 2, adjust.method = "BH",
+        n = nrow(fit))
+      X.train1 <- X.train[, rownames(top)[1:topranked],
+        drop = FALSE]
+    }
+    X.test1 = X[omit, colnames(X.train1), drop = FALSE]
+
+    ## fit model to train dataset
+    fit <- mixOmics::splsda(X = X.train1, Y = Y.train, keepX = keepX, ncomp = ncomp)
+    panelList[[i]] <- unique(as.character(as.matrix(apply(fit$loadings$X, 2, function(i) names(which(i != 0))))))
+    predMod <- predict(object = fit, newdata = X.test1, dist = "all")
+
+    predictResponseList[[i]] <- lapply(predMod$class, function(i) i[, ncomp, drop = FALSE])
+    if(M == nrow(X)){
+      probsList[[i]] <- predMod$predict[,, ncomp][levels(Y)[2]]
+    } else {
+      probsList[[i]] <- predMod$predict[,, ncomp][, levels(Y)[2]]
+    }
+  }
+
+  ## Error Rate per distance method
+  err <- predictResponseList %>% zip_nPure %>% lapply(., function(i){
+    predictResponse <- factor(unlist(i), levels = levels(Y))
+    trueLabels = Y[unlist(folds)]
+    mat <- table(trueLabels, predictResponse)
+    mat2 <- mat
+    diag(mat2) <- 0
+    classError <- colSums(mat2)/colSums(mat)
+    er <- sum(mat2)/sum(mat)
+    ber <- mean(classError)
+    perf <- c(classError, er, ber)
+    names(perf) <- c(names(classError), "ER", "BER")
+    perf
+  })
+  errorRate <- do.call(rbind, err) %>% as.data.frame %>% mutate(Method = rownames(.)) %>%
+    tidyr::gather(Index, Value, -Method)
+
+  ## AUC per distance method
+  probs <- unlist(probsList)
+  trueLabels = Y[unlist(folds)]
+  library(pROC)
+  library(OptimalCutpoints)
+  perf <- amritr::tperformance(weights = probs, trueLabels = trueLabels)
+
+  panelFreq <- unlist(panelList)
+
+  return(list(predictResponseList = predictResponseList, probsList = probsList, panelFreq = panelFreq,
+    errorRate = errorRate, perf = perf))
+}
+
+
+#' repeated CV function for a splsda model
+#'
+#' takes in predited weights and true labels and determines performance characterisitcs
+#' @param object splsda model object
+#' @param valdation type of cross-validation; Mfold "Mfold" or LOOCV "loo"
+#' @param M Number of folds in the cross-validation
+#' @param iter number of times to repeat the cross-validation
+#' @param threads number of cores to use to parrallel the CV
+#' @param progressBar display progress bar or not (TRUE/FALSE)
+#' @export
+perf.splsda = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10, threads = 4, progressBar = TRUE){
+  library(dplyr)
+  library(tidyr)
+  X = object$X
+  Y = object$Y
+  n = nrow(X)
+  keepX = object$keepX
+  ncomp = object$ncomp
+  if (validation == "Mfold") {
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
+    require(parallel)
+    cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
+    parallel::clusterExport(cl, varlist = c("splsdaCV", "X", "Y", "keepX", "ncomp",
+      "M", "folds", "progressBar", "filter", "topranked"), envir = environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi,
+      X, Y, keepX, ncomp, M, progressBar, filter, topranked) {
+      library(mixOmics); library(dplyr); library(amritr);
+      splsdaCV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = foldsi,
+        progressBar = progressBar, filter = filter, topranked = topranked)
+    }, X, Y, keepX, ncomp, M, progressBar, filter, topranked) %>% amritr::zip_nPure()
+    parallel::stopCluster(cl)
+
+    ## CV panels
+    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)), decreasing = TRUE)]/(M*iter)
+
+    ## error rate
+    errorRate <- do.call(rbind, cv$errorRate) %>% dplyr::group_by(Method, Index) %>%
+      dplyr::summarise(Mean = mean(Value), SD = sd(Value))
+
+    ## classification performance measures
+    perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
+      gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
+      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
+  } else {
+    folds = split(1:n, rep(1:n, length = n))
+    M = n
+    cv <- splsdaCV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = folds,
+      progressBar = progressBar, filter = filter, topranked = topranked)
+    ## CV panels
+    panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)), decreasing = TRUE)]/M
+
+    ## error rate
+    errorRate <- cv$errorRate %>% as.data.frame %>%
+      dplyr::group_by(Method, Index) %>%
+      dplyr::summarise(Mean = mean(Value), SD = sd(Value))
+
+    ## classification performance measures
+    perf <- data.frame(ErrName = names(cv$perf),
+      Mean = as.numeric(cv$perf), SD = NA)
+  }
+
+  if(nlevels(Y) == 2){
+    colPalette <- c("#66C2A5", "#FC8D62")
+    ## Generate summarise plots
+    ## plot prob vs. samples plot
+    probDat <- lapply(cv$probsList, unlist) %>% lapply(., function(i) i[names(Y)]) %>%
+      do.call(rbind, .) %>% as.data.frame %>% gather(Sample, Prob) %>%
+      mutate(phenotype = Y[Sample]) %>%
+      group_by(phenotype, Sample) %>% dplyr::summarise(Mean = mean(Prob), SD = sd(Prob)) %>%
+      arrange(Mean) %>%
+      mutate(Sample = factor(as.character(Sample), levels = as.character(Sample)))
+    probPlot <- probDat %>% ggplot(aes(x = Sample, y = Mean, color = phenotype)) + geom_point() +
+      geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = subset(perf, ErrName == "cutoff")$Mean), fill = colPalette[1], alpha = 0.01) +
+      geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = subset(perf, ErrName == "cutoff")$Mean, ymax = Inf), fill = colPalette[2], alpha = 0.01) +
+      geom_point() +
+      geom_errorbar(aes(ymin = Mean-SD, ymax = Mean+SD)) +
+      geom_hline(yintercept = subset(perf, ErrName == "cutoff")$Mean, linetype = "dashed") +
+      customTheme(sizeStripFont = 10, xAngle = 90, hjust = 1, vjust = 0.5, xSize = 10,
+        ySize = 10, xAxisSize = 10, yAxisSize = 10) +
+      ylab(paste0("AUC Mean+/-SD ", "(", iter, "x", M, "-fold CV)")) +
+      xlab("Observations") +
+      ggtitle(paste(paste(perf$ErrName, round(perf$Mean, 2), sep = "="),
+        collapse=", ")) + scale_color_manual(values=colPalette, name = "True labels")
+  }
+
+  result = list()
+  result$predictResponseList = cv$predictResponseList
+  result$probsList  = cv$probsList
+  result$probsList = cv$probsList
+  result$panelFreq = panelFreq
+  result$errorRate = errorRate
+  result$perf = perf
+  if(nlevels(Y) == 2){result$probPlot = probPlot}
+  method = "splsda.mthd"
+  result$meth = "splsda.mthd"
+  class(result) = c("perf", method)
+  return(invisible(result))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #' splsda model after tuning of the number of variables
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
