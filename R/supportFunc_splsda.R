@@ -59,7 +59,7 @@ sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL, 
     errorRate = errorRate, filter = filter, topranked = topranked))
 }
 
-#' CV function for a splsda model
+#' CV function for a sPLSDA model
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
 #' @param X nxp dataset
@@ -142,10 +142,10 @@ sPLSDACV = function(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked
     errorRate = errorRate, perf = perf))
 }
 
-#' repeated CV function for a splsda model
+#' repeated CV function for a sPLSDA model
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
-#' @param object splsda model object
+#' @param object sPLSDA model object
 #' @param valdation type of cross-validation; Mfold "Mfold" or LOOCV "loo"
 #' @param M Number of folds in the cross-validation
 #' @param iter number of times to repeat the cross-validation
@@ -166,12 +166,12 @@ perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist = c("splsdaCV", "X", "Y", "keepX", "ncomp",
+    parallel::clusterExport(cl, varlist = c("sPLSDACV", "X", "Y", "keepX", "ncomp",
       "M", "folds", "progressBar", "filter", "topranked"), envir = environment())
     cv <- parallel::parLapply(cl, folds, function(foldsi,
       X, Y, keepX, ncomp, M, progressBar, filter, topranked) {
       library(mixOmics); library(dplyr); library(amritr);
-      splsdaCV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = foldsi,
+      sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = foldsi,
         progressBar = progressBar, filter = filter, topranked = topranked)
     }, X, Y, keepX, ncomp, M, progressBar, filter, topranked) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
@@ -190,7 +190,7 @@ perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
   } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- splsdaCV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = folds,
+    cv <- sPLSDACV(X = X, Y = Y, keepX = keepX, ncomp = ncomp, M = M, folds = folds,
       progressBar = progressBar, filter = filter, topranked = topranked)
     ## CV panels
     panelFreq <- table(unlist(cv$panelFreq))[order(table(unlist(cv$panelFreq)), decreasing = TRUE)]/M
@@ -237,13 +237,13 @@ perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
   result$errorRate = errorRate
   result$perf = perf
   if(nlevels(Y) == 2){result$probPlot = probPlot}
-  method = "splsda.mthd"
-  result$meth = "splsda.mthd"
+  method = "sPLSDA.mthd"
+  result$meth = "sPLSDA.mthd"
   class(result) = c("perf", method)
   return(invisible(result))
 }
 
-#' splsda model after tuning of the number of variables
+#' sPLSDA model after tuning of the number of variables
 #'
 #' takes in predited weights and true labels and determines performance characterisitcs
 #' @param X nxp dataset

@@ -2,7 +2,7 @@
 % Please edit documentation in R/supportFunc_splsda.R
 \name{tuned.sPLSDA}
 \alias{tuned.sPLSDA}
-\title{splsda model after tuning of the number of variables}
+\title{sPLSDA model after tuning of the number of variables}
 \usage{
 tuned.sPLSDA(X, Y, ncomp, keepXgrid, validation, M)
 }
