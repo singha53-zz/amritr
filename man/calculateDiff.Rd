@@ -2,18 +2,11 @@
 % Please edit documentation in R/dingo.R
 \name{calculateDiff}
 \alias{calculateDiff}
-\title{table of classification performances}
+\title{calculate difference between edge scores}
 \usage{
 calculateDiff(n, tY.org, z, levels.z, P, w.upper)
 }
-\arguments{
-\item{weights}{are the predicted scores/probablities of test data}
-
-\item{trubeLabels}{are the true labels associated with the test data}
-
-\item{direction}{= "auto", ">", "<"}
-}
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+calculate difference between edge scores
 }
 

@@ -2,19 +2,27 @@
 % Please edit documentation in R/dingo.R
 \name{fast.dingo}
 \alias{fast.dingo}
-\title{table of classification performances}
+\title{Perform DINGO}
 \usage{
 fast.dingo(dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose = T,
   threads = 4)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{dat}{nxp dataset}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{x}{response vector of n subjects}
 
-\item{direction}{= "auto", ">", "<"}
+\item{rhoarray}{penalization values for inverse covariance matrix (computed via glasso)}
+
+\item{diff.score}{compute edge score}
+
+\item{B}{Number of permutations (bootstraps)}
+
+\item{verbose}{TRUE/FALSE}
+
+\item{threads}{Number of cores to permutations over cores}
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Differential Network Analysis in Genomics
 }
 

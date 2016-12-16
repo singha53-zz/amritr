@@ -1,9 +1,5 @@
-#' table of classification performances
+#' compute BIC value
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
 #' @export
 extendedBIC = function (gamma, omegahat, S, n)
 {
@@ -13,15 +9,20 @@ extendedBIC = function (gamma, omegahat, S, n)
       es * (log(n)/n) + es * gamma * (4 * log(p)/n))
 }
 
-#' table of classification performances
+#' Perform DINGO
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
+#' Differential Network Analysis in Genomics
+#' @param dat nxp dataset
+#' @param x response vector of n subjects
+#' @param rhoarray penalization values for inverse covariance matrix (computed via glasso)
+#' @param diff.score compute edge score
+#' @param B Number of permutations (bootstraps)
+#' @param verbose TRUE/FALSE
+#' @param threads Number of cores to permutations over cores
 #' @export
 fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose = T, threads = 4)
 {
+  library(glasso)
   n = nrow(dat)
   p = ncol(dat)
   II = diag(p)
@@ -93,12 +94,8 @@ fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose 
   }
 }
 
-#' table of classification performances
+#' recompute differential edge scores
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
 #' @export
 fast.scoring.boot = function (stddat, z, Omega, A, B, boot.B = 100, verbose = T, threads)
 {
@@ -135,12 +132,8 @@ fast.scoring.boot = function (stddat, z, Omega, A, B, boot.B = 100, verbose = T,
     R2 = R2, boot.diff = boot.diff, diff.score = diff.score))
 }
 
-#' table of classification performances
+#' calculate difference between edge scores
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param weights are the predicted scores/probablities of test data
-#' @param trubeLabels are the true labels associated with the test data
-#' @param direction = "auto", ">", "<"
 #' @export
 calculateDiff = function(n, tY.org, z, levels.z, P, w.upper){
   w.id = sample(1:n, replace = T)

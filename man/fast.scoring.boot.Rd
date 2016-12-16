@@ -2,19 +2,12 @@
 % Please edit documentation in R/dingo.R
 \name{fast.scoring.boot}
 \alias{fast.scoring.boot}
-\title{table of classification performances}
+\title{recompute differential edge scores}
 \usage{
 fast.scoring.boot(stddat, z, Omega, A, B, boot.B = 100, verbose = T,
   threads)
 }
-\arguments{
-\item{weights}{are the predicted scores/probablities of test data}
-
-\item{trubeLabels}{are the true labels associated with the test data}
-
-\item{direction}{= "auto", ">", "<"}
-}
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+recompute differential edge scores
 }
 
