@@ -4,26 +4,24 @@
 \alias{tuned.sPLSDACV}
 \title{Runs a cross-validation scheme for a tuned.splsda model once}
 \usage{
-tuned.sPLSDACV(X = X, Y = Y, ncomp = ncomp, folds = folds,
-  progressBar = FALSE, keepXgrid = keepXgrid, validation = validation,
-  M = M)
+tuned.sPLSDACV(object, folds)
 }
 \arguments{
+\item{folds}{list of length M where each element contains the indices of the samples in that fold}
+
 \item{X}{nxp dataset}
 
 \item{Y}{vector of phenotype labels with names(Y) == rownames(X)}
 
 \item{ncomp}{number of components}
 
-\item{folds}{list of length M where each element contains the indices of the samples in that fold}
-
 \item{progressBar}{= TRUE/FALSE}
 
 \item{keepXgrid}{sequence of integers (# of variables to select per component)}
 
-\item{M}{Number of folds in the cross-validation}
-
 \item{validatoin}{"Mfold" or "loo"}
+
+\item{M}{Number of folds in the cross-validation}
 }
 \description{
 estimate the error rate and AUC of tuned.splsda panel

@@ -4,19 +4,18 @@
 \alias{perf.tuned.sPLSDA}
 \title{Runs a cross-validation scheme a given number (iter) of times}
 \usage{
-perf.tuned.sPLSDA(object, validation = "Mfold", M = 5, iter = 5,
-  progressBar = TRUE)
+perf.tuned.sPLSDA(object)
 }
 \arguments{
 \item{object}{tuned.splsda model}
+
+\item{validatoin}{"Mfold" or "loo"}
 
 \item{M}{Number of folds in the cross-validation}
 
 \item{iter}{Number of times to repeat cross-validation}
 
 \item{progressBar}{= show progress bar or not}
-
-\item{validatoin}{"Mfold" or "loo"}
 }
 \description{
 estimate the error rate and AUC of tuned.splsda panel
