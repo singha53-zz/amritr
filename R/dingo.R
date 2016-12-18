@@ -23,6 +23,7 @@ extendedBIC = function (gamma, omegahat, S, n)
 fast.dingo = function (dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose = T, threads = 4)
 {
   library(glasso); library(DINGO);
+  library(parallel)
   n = nrow(dat)
   p = ncol(dat)
   II = diag(p)
