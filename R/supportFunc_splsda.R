@@ -285,31 +285,42 @@ perf.sPLSDA = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10
 #' @param validatoin "Mfold" or "loo"
 #' @param M Number of folds in the cross-validation
 #' @export
-tuned.sPLSDA = function(X.train, Y.train, keepXgrid, ncomp, X.test = X.test, Y.test = Y.test,
-  filter = filter, topranked = topranked, validation = validation, M = M,
-  iter = iter, threads = threads, progressBar = progressBar){
+tuned.sPLSDA = function(X.train, Y.train, keepXgrid, ncomp, X.test = X.test,
+  Y.test = Y.test, filter = filter, topranked = topranked,
+  validation = validation, M = M, iter = iter, threads = threads,
+  progressBar = progressBar, optimal = optimal, errorMethod = errorMethod){
+  indx <- unlist(lapply(keepXgrid, function(i) {
+    result <- sPLSDA(X.train, Y.train, keepX = rep(i, ncomp),
+      ncomp, X.test = X.test, Y.test = Y.test, filter = filter,
+      topranked = topranked)
+    cv <- perf.sPLSDA(object = result, validation = validation,
+      M = M, iter = iter, threads = threads, progressBar = progressBar)
 
-  auc <- unlist(lapply(keepXgrid, function(i){
-    result <- sPLSDA(X.train, Y.train, keepX = rep(i, ncomp), ncomp,
-      X.test = X.test, Y.test = Y.test, filter = filter, topranked = topranked)
-    cv <- perf.sPLSDA(object = result, validation = validation, M = M, iter = iter,
-      threads = threads, progressBar = progressBar)
-    subset(cv$perf, ErrName == "AUC")$Mean
+    if(optimal == "auc"){
+      subset(cv$perf, ErrName == "AUC")$Mean
+    } else {
+      subset(cv$errorRate, Method == errorMethod & Index == "BER")$Mean
+    }
   }))
-  keepX <- rep(keepXgrid[which(auc == max(auc))], 2)
-  fit <- sPLSDA(X.train, Y.train, keepX = keepX, ncomp,
-    X.test = X.test, Y.test = Y.test, filter = filter, topranked = topranked)
+  if(optimal == "auc"){
+    keepX <- rep(keepXgrid[which(indx == max(indx))][1], 2)
+  } else {
+    keepX <- rep(keepXgrid[which(indx == min(indx))][1], 2)
+  }
+
+  fit <- sPLSDA(X.train, Y.train, keepX = keepX, ncomp, X.test = X.test,
+    Y.test = Y.test, filter = filter, topranked = topranked)
   panel <- fit$panel
   predictResponse <- fit$predictResponse
   probs <- fit$probs
   perfTest <- fit$perfTest
   errorRate <- fit$errorRate
-
   return(list(X.train = X.train, Y.train = Y.train, keepXgrid = keepXgrid,
     panel = panel, predictResponse = predictResponse, probs = probs,
     perfTest = perfTest, ncomp = ncomp, keepX = keepX, errorRate = errorRate,
-    filter = filter, topranked = topranked, validation = validation, M = M, threads = threads,
-    progressBar = progressBar, iter = iter))
+    filter = filter, topranked = topranked, validation = validation,
+    M = M, threads = threads, progressBar = progressBar,
+    iter = iter, optimal = optimal, errorMethod = errorMethod))
 }
 
 #' Runs a cross-validation scheme for a tuned.splsda model once
@@ -336,6 +347,8 @@ tuned.sPLSDACV = function(object, folds){
   iter = object$iter
   threads = object$threads
   progressBar = object$progressBar
+  optimal = object$optimal
+  errorMethod = object$errorMethod
   library(pROC)
   library(limma)
   library(mixOmics)
@@ -361,10 +374,11 @@ tuned.sPLSDACV = function(object, folds){
         drop = FALSE]
     }
     X.test1 = X[omit, colnames(X.train1), drop = FALSE]
-
-    fit <- tuned.sPLSDA(X.train = X.train1, Y.train = Y.train, keepXgrid, ncomp, X.test = X.test1,
-      Y.test = Y[omit], filter = filter, topranked = topranked, validation = validation, M = M,
-      iter = iter, threads = threads, progressBar = progressBar)
+    fit <- tuned.sPLSDA(X.train = X.train1, Y.train = Y.train,
+      keepXgrid, ncomp, X.test = X.test1, Y.test = Y[omit],
+      filter = filter, topranked = topranked, validation = validation,
+      M = M, iter = iter, threads = threads, progressBar = progressBar,
+      optimal = optimal, errorMethod = errorMethod)
     panelList[[i]] = fit$panel
     predictResponseList[[i]] <- fit$predictResponse
     probsList[[i]] <- fit$probs
@@ -389,8 +403,8 @@ tuned.sPLSDACV = function(object, folds){
   library(pROC)
   library(OptimalCutpoints)
   perf <- amritr::tperformance(weights = probs, trueLabels = trueLabels)
-  if(validation == "Mfold"){
-    panelFreq <- table(unlist(panelList))/(M*iter)
+  if (validation == "Mfold") {
+    panelFreq <- table(unlist(panelList))/(M * iter)
     panelFreq <- panelFreq[order(panelFreq, decreasing = TRUE)]
   } else {
     panelFreq <- table(unlist(panelList))/(M)
@@ -420,7 +434,7 @@ perf.tuned.sPLSDA = function(object){
     M <- object$M
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     cv <- list()
-    for(i in 1 : iter){
+    for (i in 1:iter) {
       cv[[i]] <- tuned.sPLSDACV(object = object, folds = folds[[i]])
     }
     cv <- cv %>% amritr::zip_nPure()
@@ -431,8 +445,7 @@ perf.tuned.sPLSDA = function(object){
     perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
       gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
       dplyr::summarise(Mean = mean(Err), SD = sd(Err))
-  }
-  else {
+  } else {
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- tuned.sPLSDACV(object = object, folds = folds)
@@ -486,13 +499,12 @@ perf.tuned.sPLSDA = function(object){
               ErrName == "cutoff")$Mean, linetype = "dashed") +
         customTheme(sizeStripFont = 10, xAngle = 90,
           hjust = 1, vjust = 0.5, xSize = 10, ySize = 10,
-          xAxisSize = 10, yAxisSize = 10) + ylab("AUC (LOOCV)") + xlab("Observations") +
-        ggtitle(paste(paste(perf$ErrName, round(perf$Mean,
-          2), sep = "="), collapse = ", ")) + scale_color_manual(values = colPalette,
-            name = "True labels")
+          xAxisSize = 10, yAxisSize = 10) + ylab("AUC (LOOCV)") +
+        xlab("Observations") + ggtitle(paste(paste(perf$ErrName,
+          round(perf$Mean, 2), sep = "="), collapse = ", ")) +
+        scale_color_manual(values = colPalette, name = "True labels")
     }
   }
-
   result = list()
   result$predictResponseList = cv$predictResponseList
   result$probsList = cv$probsList
