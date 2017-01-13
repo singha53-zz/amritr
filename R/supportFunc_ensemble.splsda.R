@@ -87,7 +87,7 @@ ensemble.splsda = function(X.train, Y.train, keepXList, ncomp, X.test, Y.test, f
 #' @param threads - # of cores, running each iteration on a separate node
 #' @param progressBar = TRUE (show progress bar or not)
 #' @export
-perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, threads = threads,
+perfEnsemble.splsda = function(object, validation = "Mfold", M = M, iter = iter, threads = threads,
   progressBar = TRUE){
   library(dplyr)
   X <- object$X.train
@@ -143,7 +143,7 @@ perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, thread
 #' @param filter - "none" or "p.value"
 #' @param topranked - # of significant features to use to build classifier
 #' @export
-ensembleCV = function(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked){
+ensemble.splsdaCV = function(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked){
   J <- length(X)
   assign("X.training", NULL, pos = 1)
   assign("Y.training", NULL, pos = 1)
