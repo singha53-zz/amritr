@@ -82,7 +82,7 @@ ensemble.splsda = function(X.train, Y.train, keepXList, ncomp, X.test, Y.test, f
     }
   }
 
-  return(list(result = result, Y.vote = Y.vote, perfTest = error, X.train = X.train, Y.train = Y.train, keepX = keepXList, filter = filter, topranked = topranked))
+  return(list(result = result, Y.vote = Y.vote, perfTest = error, X.train = X.train, Y.train = Y.train, keepXList = keepXList, filter = filter, topranked = topranked))
 }
 
 
