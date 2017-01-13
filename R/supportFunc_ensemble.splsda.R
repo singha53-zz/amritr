@@ -21,23 +21,30 @@ ensemble.splsda = function(X.train, Y.train, keepXList, ncomp, X.test, Y.test, f
         sPLSDA(X.train, Y.train, keepX, ncomp, X.test = X.test, Y.test = Y.test,
           filter = filter, topranked = topranked)
       }, X.train = X.train, X.test = X.test, keepX = keepXList, SIMPLIFY = FALSE)
-      predConcat <- do.call(cbind, lapply(result, function(i) {
+      predConcat <- lapply(result, function(i) {
         i$predictResponse
-      }))
-      Y.vote <- apply(predConcat, 1, function(z) {
-        temp = table(z)
-        if (length(names(temp)[temp == max(temp)]) > 1) {
-          "zz"
-        }
-        else {
-          names(temp)[temp == max(temp)]
-        }
+      }) %>% zip_nPure()
+
+      Y.vote <- lapply(predConcat, function(i){
+        apply(do.call(cbind, i), 1, function(z) {
+          temp = table(z)
+          if (length(names(temp)[temp == max(temp)]) > 1) {
+            "zz"
+          }
+          else {
+            names(temp)[temp == max(temp)]
+          }
+        })
       })
-      temp = table(pred = factor(Y.vote, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
-      diag(temp) <- 0
-      error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
-        mean(colSums(temp)/summary(Y.test)))
-      names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+
+      error = do.call(rbind, lapply(Y.vote, function(i){
+        temp <- table(pred = factor(i, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
+        diag(temp) <- 0
+        error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
+          mean(colSums(temp)/summary(Y.test)))
+        names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+        error
+      }))
     } else { ## if the different numbers of train and test datasets are available
       comDataset <- intersect(names(X.train), names(X.test))
       X.train <- X.train[comDataset]
@@ -48,22 +55,30 @@ ensemble.splsda = function(X.train, Y.train, keepXList, ncomp, X.test, Y.test, f
         sPLSDA(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL,
           filter = filter, topranked = topranked)
       }, X.train = X.train, X.test = X.test, keepX = keepXList, SIMPLIFY = FALSE)
-      predConcat <- do.call(cbind, lapply(result, function(i) {
+      predConcat <- lapply(result, function(i) {
         i$predictResponse
-      }))
-      Y.vote <- apply(predConcat, 1, function(z) {
-        temp = table(z)
-        if (length(names(temp)[temp == max(temp)]) > 1) { "zz"
-        }
-        else {
-          names(temp)[temp == max(temp)]
-        }
+      }) %>% zip_nPure()
+
+      Y.vote <- lapply(predConcat, function(i){
+        apply(do.call(cbind, i), 1, function(z) {
+          temp = table(z)
+          if (length(names(temp)[temp == max(temp)]) > 1) {
+            "zz"
+          }
+          else {
+            names(temp)[temp == max(temp)]
+          }
+        })
       })
-      temp = table(pred = factor(Y.vote, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
-      diag(temp) <- 0
-      error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
-        mean(colSums(temp)/summary(Y.test)))
-      names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+
+      error = do.call(rbind, lapply(Y.vote, function(i){
+        temp <- table(pred = factor(i, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
+        diag(temp) <- 0
+        error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
+          mean(colSums(temp)/summary(Y.test)))
+        names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
+        error
+      }))
     }
   }
 

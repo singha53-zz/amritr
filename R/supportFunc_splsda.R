@@ -48,14 +48,14 @@ sPLSDA = function(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL,
         perf
       }) %>% do.call(rbind, .) %>% as.data.frame %>% mutate(Method = rownames(.)) %>%
         tidyr::gather(Index, Value, -Method)
-      probs <- predMod$predict[, , ncomp][, levels(Y)[2]]
+      probs <- predMod$predict[, , ncomp][, levels(Y.train)[2]]
       perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)),
         trueLabels = Y.test)
     } else {
       predictResponse <- lapply(predMod$class, function(i) {
         factor(i[, ncomp], levels = levels(Y.test))
       })
-      probs <- predMod$predict[, , ncomp][levels(Y)[2]]
+      probs <- predMod$predict[, , ncomp][levels(Y.train)[2]]
       perfTest <- errorRate <- NA
     }
   } else {
