@@ -2,18 +2,17 @@
 % Please edit documentation in R/supportFunc_ensemble.splsda.R
 \name{ensemble.splsdaCV}
 \alias{ensemble.splsdaCV}
-\title{Estimate cross-validation using cross-validation}
+\title{Estimate cross-validation error using cross-validation}
 \usage{
-ensemble.splsdaCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
+ensemble.splsdaCV(X, Y, keepXList, ncomp, M, folds, progressBar, filter,
+  topranked)
 }
 \arguments{
 \item{X}{- list of training datasets (nxpi); i number of elements}
 
 \item{Y}{- n-vector of class labels}
 
-\item{alpha}{= list of alpha values}
-
-\item{lambda}{= list of lambda values}
+\item{keepXList}{= list of keepX}
 
 \item{M}{- # of folds}
 
@@ -26,6 +25,6 @@ ensemble.splsdaCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
 \item{topranked}{- # of significant features to use to build classifier}
 }
 \description{
-Estimate cross-validation using cross-validation
+Estimate cross-validation error using cross-validation
 }
 

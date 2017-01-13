@@ -8,7 +8,7 @@ perfEnsemble.splsda(object, validation = "Mfold", M = M, iter = iter,
   threads = threads, progressBar = TRUE)
 }
 \arguments{
-\item{object}{- ensembleEnet object}
+\item{object}{- ensemble.splsda object}
 
 \item{validation}{= Mfold or loo}
 
