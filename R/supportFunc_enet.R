@@ -210,7 +210,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   filter = object$filter
   topranked = object$topranked
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y,
+    folds <- lapply(1:iter, function(i) createFolds(Y,
       k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores",

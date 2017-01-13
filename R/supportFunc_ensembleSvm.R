@@ -102,7 +102,7 @@ perfEnsembleSvm = function(object, validation = "Mfold", M = M, iter = iter, thr
   n = length(Y)
   alpha = object$alpha
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist=c("ensembleSvmCV", "ensembleSvm", "supportVectorMachine", "X", "Y", "M", "folds", "progressBar"), envir=environment())

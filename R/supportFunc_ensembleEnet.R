@@ -92,7 +92,7 @@ perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, thread
   filter = object$filter
   topranked = object$topranked
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist = c("ensembleCV",

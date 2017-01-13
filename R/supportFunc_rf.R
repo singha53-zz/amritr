@@ -148,7 +148,7 @@ perf.rf = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   family = object$family
 
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) caret::createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores",
       threads))
