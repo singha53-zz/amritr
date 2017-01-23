@@ -28,7 +28,7 @@ compVar = function (demo, eset, variables, ncomp = 10) {
   }))
   rownames(pval) <- variables
   colnames(pval) <- paste(colnames(pval), paste0(round(100 *
-      (pcaX$sdev/sum(pcaX$sdev)), 1), "%"), sep = "-")
+      (pcaX$sdev^2/sum(pcaX$sdev^2)), 1), "%"), sep = "-") # eigenvalues are squared to give the variances
   pval <- pval[, 1:ncomp]
   pvalheatmap <- pval
   pvalheatmap[pvalheatmap < 0.01] <- 0.01
