@@ -17,4 +17,3 @@ lme_interactionBinaryCont(x, y, binary, replicates, xlab, ylab, main,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

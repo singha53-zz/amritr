@@ -26,4 +26,3 @@ tuned.sPLSDACV(object, folds)
 \description{
 estimate the error rate and AUC of tuned.splsda panel
 }
-

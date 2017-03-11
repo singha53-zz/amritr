@@ -27,4 +27,3 @@ enet(X, Y, alpha, lambda = NULL, family, X.test = NULL, Y.test = NULL,
 \description{
 build an elastic net classification panel
 }
-

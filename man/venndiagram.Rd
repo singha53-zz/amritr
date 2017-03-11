@@ -14,4 +14,3 @@ venndiagram(datList, circleNames)
 \description{
 Venn diagram of 2, 3, or 4 sets
 }
-

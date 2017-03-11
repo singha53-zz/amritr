@@ -27,4 +27,3 @@ supportVectorMachine(X, Y, X.test = NULL, Y.test = NULL,
 \description{
 build a SVM classification panel
 }
-

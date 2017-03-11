@@ -4,7 +4,7 @@
 \alias{vennTriple}
 \title{Overlap between 3 sets}
 \usage{
-vennTriple(datList)
+vennTriple(datList, circleNames)
 }
 \arguments{
 \item{datList}{list of character vectors}
@@ -12,4 +12,3 @@ vennTriple(datList)
 \description{
 Overlap between 3 sets
 }
-

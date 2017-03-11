@@ -19,4 +19,3 @@ pandaModif(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.01,
 \description{
 run PANDA (calculate geneCoreg, regNet and co-operative matrices)
 }
-

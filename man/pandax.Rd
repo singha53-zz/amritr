@@ -18,4 +18,3 @@ pandax(motif, geneExp, regExp, phenotype)
 \description{
 Caculate difference between regulatory coefficients of the two groups
 }
-

@@ -16,4 +16,3 @@ doPerm(perm, X, Y)
 \description{
 do permutations
 }
-

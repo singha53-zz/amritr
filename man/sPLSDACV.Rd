@@ -28,4 +28,3 @@ sPLSDACV(X, Y, keepX, ncomp, M, folds, progressBar, filter, topranked)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

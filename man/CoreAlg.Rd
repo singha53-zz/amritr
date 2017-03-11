@@ -42,4 +42,3 @@ Output: matrix object containing all results and tabular data written to disk 'C
 License: http://cibersort.stanford.edu/CIBERSORT_License.txt
 Core algorithm
 }
-

@@ -4,7 +4,7 @@
 \alias{vennQuad}
 \title{Overlap between 4 sets}
 \usage{
-vennQuad(datList)
+vennQuad(datList, circleNames)
 }
 \arguments{
 \item{datList}{list of character vectors}
@@ -12,4 +12,3 @@ vennQuad(datList)
 \description{
 Overlap between 4 sets
 }
-

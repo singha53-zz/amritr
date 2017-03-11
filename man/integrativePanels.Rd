@@ -23,4 +23,3 @@ integrativePanels(X.train, Y.train, X.test, Y.test, concat_alpha, concat_lambda,
 \description{
 build integrative panels (Concatenation, Ensemble, DIABLO)
 }
-

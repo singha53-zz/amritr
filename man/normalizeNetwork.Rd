@@ -9,4 +9,3 @@ normalizeNetwork(X)
 \description{
 normalizeNetwork
 }
-

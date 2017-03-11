@@ -16,4 +16,3 @@ zip_nPure(.x, .fields = NULL, .simplify = FALSE)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

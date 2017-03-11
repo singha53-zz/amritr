@@ -24,4 +24,3 @@ rfCV(X, Y, M, folds, progressBar, family, filter, topranked)
 \description{
 Estimate test error of random forest panel
 }
-

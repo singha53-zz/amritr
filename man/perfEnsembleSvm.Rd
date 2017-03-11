@@ -17,4 +17,3 @@ perfEnsembleSvm(object, validation = "Mfold", M = M, iter = iter,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

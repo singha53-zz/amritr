@@ -14,4 +14,3 @@ createFolds(y, k = 10, list = TRUE, returnTrain = FALSE)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

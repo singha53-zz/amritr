@@ -27,4 +27,3 @@ sPLSDA(X.train, Y.train, keepX, ncomp, X.test = NULL, Y.test = NULL,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

@@ -22,4 +22,3 @@ graphIndices(panels = panels, X.train = X.train, cutoff = cutoff)
 \description{
 build integrative panels (Concatenation, Ensemble, DIABLO)
 }
-

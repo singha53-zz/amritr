@@ -9,4 +9,3 @@ tanimoto(X, Y)
 \description{
 tanimoto
 }
-

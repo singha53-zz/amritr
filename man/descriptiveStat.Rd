@@ -20,4 +20,3 @@ descriptiveStat(demo, groups, variables, paired = FALSE, pairing = NULL)
 \description{
 takes in data and determines the summary statistics (Mean & SD) and also compares the levels of the groups (binary) variable
 }
-

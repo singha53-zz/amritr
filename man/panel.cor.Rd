@@ -16,4 +16,3 @@ panel.cor(x, y, digits = 2, prefix = "", cex.cor, ...)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

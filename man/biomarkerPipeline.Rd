@@ -30,4 +30,3 @@ biomarkerPipeline(X = X, Y = Y, topranked = 50, validation = "Mfold",
 \description{
 build various biomarker panels
 }
-

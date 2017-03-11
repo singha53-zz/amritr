@@ -23,4 +23,3 @@ ensemble.splsda(X.train, Y.train, keepXList, ncomp, X.test, Y.test, filter,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

@@ -20,4 +20,3 @@ perf.tuned.sPLSDA(object)
 \description{
 estimate the error rate and AUC of tuned.splsda panel
 }
-

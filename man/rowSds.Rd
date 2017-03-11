@@ -9,4 +9,3 @@ rowSds(x, rows = NULL, cols = NULL, ...)
 \description{
 rowSds
 }
-

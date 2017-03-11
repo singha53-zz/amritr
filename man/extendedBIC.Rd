@@ -9,4 +9,3 @@ extendedBIC(gamma, omegahat, S, n)
 \description{
 compute BIC value
 }
-

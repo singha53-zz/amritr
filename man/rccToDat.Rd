@@ -12,4 +12,3 @@ rccToDat(fileName)
 \description{
 NanoString .RCC files to data frame
 }
-

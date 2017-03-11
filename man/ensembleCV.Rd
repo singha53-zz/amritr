@@ -28,4 +28,3 @@ ensembleCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
 \description{
 Estimate cross-validation using cross-validation
 }
-

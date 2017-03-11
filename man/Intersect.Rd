@@ -12,4 +12,3 @@ Intersect(x)
 \description{
 Intersection function
 }
-

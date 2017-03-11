@@ -12,4 +12,3 @@ Union(x)
 \description{
 Union function
 }
-

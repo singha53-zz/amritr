@@ -9,4 +9,3 @@ colSds(x, rows = NULL, cols = NULL, ...)
 \description{
 colSds
 }
-

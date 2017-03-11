@@ -18,4 +18,3 @@ glmPanel(X, Y, X.test = NULL, Y.test = NULL)
 \description{
 build a glm biomarker
 }
-

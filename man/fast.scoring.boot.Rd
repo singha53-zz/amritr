@@ -10,4 +10,3 @@ fast.scoring.boot(stddat, z, Omega, A, B, boot.B = 100, verbose = T,
 \description{
 recompute differential edge scores
 }
-

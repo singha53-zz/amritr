@@ -12,4 +12,3 @@ setDesign(X, corCutOff, plotMat = FALSE)
 \description{
 clean up diablo perf() output
 }
-

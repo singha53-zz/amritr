@@ -23,4 +23,3 @@ perf.glm(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
 \description{
 Estimate test error of glm biomarker
 }
-

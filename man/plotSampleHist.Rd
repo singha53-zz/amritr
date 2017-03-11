@@ -16,4 +16,3 @@ plotSampleHist(data = data, main = NULL, xlim = NULL, ylim = NULL)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

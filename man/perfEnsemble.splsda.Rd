@@ -23,4 +23,3 @@ perfEnsemble.splsda(object, validation = "Mfold", M = M, iter = iter,
 \description{
 Estimate test error using repeated cross-validation
 }
-

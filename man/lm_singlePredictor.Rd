@@ -16,4 +16,3 @@ lm_singlePredictor(x, y, xlab, ylab, main, lim = NULL)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

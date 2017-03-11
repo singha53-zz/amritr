@@ -12,4 +12,3 @@ extractErr(cv)
 \description{
 clean up diablo perf() output
 }
-

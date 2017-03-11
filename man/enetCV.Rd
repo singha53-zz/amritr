@@ -24,4 +24,3 @@ enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked)
 \description{
 Estimate test error of elastic net panel
 }
-

@@ -14,4 +14,3 @@ networkStats(adjMat, mode = "graph")
 \description{
 compuate network statistics given a adjacency matrix
 }
-

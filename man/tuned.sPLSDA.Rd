@@ -25,4 +25,3 @@ tuned.sPLSDA(X.train, Y.train, keepXgrid, ncomp, X.test = X.test,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

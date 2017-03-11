@@ -25,4 +25,3 @@ fast.dingo(dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose = T,
 \description{
 Differential Network Analysis in Genomics
 }
-

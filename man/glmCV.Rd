@@ -20,4 +20,3 @@ glmCV(X, Y, M, folds, progressBar)
 \description{
 Estimate test error of glm biomarker
 }
-

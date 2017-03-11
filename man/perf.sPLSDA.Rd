@@ -23,4 +23,3 @@ perf.sPLSDA(object, validation = c("Mfold", "loo"), M = 5, iter = 10,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

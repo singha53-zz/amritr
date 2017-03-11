@@ -20,4 +20,3 @@ pandaxBoot(motif, geneExp, regExp, phenotype, nperms, threads)
 \description{
 Caculate differential regulatory network statistics
 }
-

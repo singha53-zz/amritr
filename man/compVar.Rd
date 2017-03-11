@@ -16,4 +16,3 @@ compVar(demo, eset, variables, ncomp = 10)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

@@ -16,4 +16,3 @@ ensembleSvm(X.train, Y.train, X.test, Y.test)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

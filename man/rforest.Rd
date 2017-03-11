@@ -23,4 +23,3 @@ rforest(X, Y, X.test = NULL, Y.test = NULL, family = "binomial",
 \description{
 build random forest classification panel
 }
-

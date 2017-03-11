@@ -10,4 +10,3 @@ colVars(x, rows = NULL, cols = NULL, na.rm = FALSE, center = NULL,
 \description{
 colVars
 }
-

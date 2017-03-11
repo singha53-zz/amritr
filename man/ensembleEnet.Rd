@@ -23,4 +23,3 @@ ensembleEnet(X.train, Y.train, alphaList, lambdaList, X.test, Y.test, filter,
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

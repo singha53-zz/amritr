@@ -27,4 +27,3 @@ ensemble.splsdaCV(X, Y, keepXList, ncomp, M, folds, progressBar, filter,
 \description{
 Estimate cross-validation error using cross-validation
 }
-

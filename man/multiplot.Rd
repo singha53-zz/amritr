@@ -16,4 +16,3 @@ multiplot(..., plotlist = NULL, file, cols = 1, layout = NULL)
 \description{
 takes in predited weights and true labels and determines performance characterisitcs
 }
-

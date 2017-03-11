@@ -2,6 +2,7 @@
 % Please edit documentation in R/functions.R, R/supportFunc_ggplot2.R
 \name{customTheme}
 \alias{customTheme}
+\alias{customTheme}
 \title{customeTheme fucntion for ggplot}
 \usage{
 customTheme(sizeStripFont, xAngle, hjust, vjust, xSize, ySize, xAxisSize,
@@ -38,4 +39,3 @@ takes in predited weights and true labels and determines performance characteris
 
 takes in predited weights and true labels and determines performance characterisitcs
 }
-
