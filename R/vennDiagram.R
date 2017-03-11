@@ -46,7 +46,7 @@ vennDual = function(datlist, circleNames){
     area2 = length(second),
     cross.area = length(intersect(first, second)),
     category = circleNames,
-    fill = c("blue", "red"),
+    fill = c("dodgerblue", "goldenrod1"),
     lty = "blank",
     cex = 2,
     cat.cex = 2,
@@ -78,11 +78,11 @@ vennTriple = function(datList, circleNames){
     n13 = length(intersect(first, third)),
     n123 = length(Reduce(intersect, list(first, second, third))),
     category = circleNames,
-    fill = c("blue", "red", "green"),
+    fill = c("dodgerblue", "goldenrod1", "darkorange1"),
     lty = "blank",
     cex = 2,
     cat.cex = 1,
-    cat.col = c("blue", "red", "green")
+    cat.col = c("dodgerblue", "goldenrod1", "darkorange1")
   );
 }
 
@@ -112,11 +112,11 @@ vennQuad = function(datList, circleNames){
     n234 = length(Reduce(intersect, list(second, third, fourth))),
     n1234 = length(Reduce(intersect, list(first, second, third, fourth))),
     category = circleNames,
-    fill = c("orange", "red", "green", "blue"),
+    fill = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3"),
     lty = "dashed",
     cex = 2,
     cat.cex = 0.75,
-    cat.col = c("orange", "red", "green", "blue")
+    cat.col = c("dodgerblue", "goldenrod1", "darkorange1", "seagreen3")
   );
 }
 
