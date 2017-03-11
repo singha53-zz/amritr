@@ -9,17 +9,17 @@ venndiagram = function(datList, circleNames){
     stop("number of list elements does not match number of element names")
 
   if(length(datList) == 2){
-    vennPlot <- vennDual(datList)
+    vennPlot <- vennDual(datList, circleNames)
   }
   if(length(datList) == 3){
     if(length(circleNames) != 3)
       stop("number of list elements does not match number of element names")
-    vennPlot <- vennTriple(datList)
+    vennPlot <- vennTriple(datList, circleNames)
   }
   if(length(datList) == 4){
     if(length(circleNames) != 4)
       stop("number of list elements does not match number of element names")
-    vennPlot <- vennQuad(datList)
+    vennPlot <- vennQuad(datList, circleNames)
   }
 
   ## determine specific overlaps
@@ -38,14 +38,14 @@ venndiagram = function(datList, circleNames){
 #'
 #' @param datList list of character vectors
 #' @export
-vennDual = function(datlist){
+vennDual = function(datlist, circleNames){
   first <- datList[[1]]
   second <- datList[[2]]
   VennDiagram::draw.pairwise.venn(
     area1 = length(first),
     area2 = length(second),
     cross.area = length(intersect(first, second)),
-    category = c("First", "Second"),
+    category = circleNames,
     fill = c("blue", "red"),
     lty = "blank",
     cex = 2,
@@ -65,7 +65,7 @@ vennDual = function(datlist){
 #'
 #' @param datList list of character vectors
 #' @export
-vennTriple = function(datList){
+vennTriple = function(datList, circleNames){
   first <- datList[[1]]
   second <- datList[[2]]
   third <- datList[[3]]
@@ -90,7 +90,7 @@ vennTriple = function(datList){
 #'
 #' @param datList list of character vectors
 #' @export
-vennQuad = function(datList){
+vennQuad = function(datList, circleNames){
   first <- datList[[1]]
   second <- datList[[2]]
   third <- datList[[3]]
