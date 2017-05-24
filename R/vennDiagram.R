@@ -38,7 +38,7 @@ venndiagram = function(datList, circleNames){
 #'
 #' @param datList list of character vectors
 #' @export
-vennDual = function(datlist, circleNames){
+vennDual = function(datList, circleNames){
   first <- datList[[1]]
   second <- datList[[2]]
   VennDiagram::draw.pairwise.venn(

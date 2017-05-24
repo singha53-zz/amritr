@@ -4,7 +4,7 @@
 \alias{vennDual}
 \title{Overlap between 2 sets}
 \usage{
-vennDual(datlist, circleNames)
+vennDual(datList, circleNames)
 }
 \arguments{
 \item{datList}{list of character vectors}
