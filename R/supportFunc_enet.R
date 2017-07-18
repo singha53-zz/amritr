@@ -170,7 +170,7 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
   }
   else {
     trueLabels = Y[unlist(folds)]
-    mat <- table(trueLabels, predictResponse)
+    mat <- table(factor(trueLabels, levels(Y)), factor(predictResponse, levels(Y)))
     mat2 <- mat
     diag(mat2) <- 0
     classError <- colSums(mat2)/colSums(mat)
