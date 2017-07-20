@@ -11,10 +11,11 @@
 #' @param topranked = 50 (top number of features to select and build a classifier)
 #' @export
 enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
-  Y.test = NULL, filter = "p.value", topranked = 50)
-{
-  library(glmnet); library(limma); library(pROC); library(OptimalCutpoints);
-
+  Y.test = NULL, filter = "p.value", topranked = 50, keepVar = NULL){
+  library(glmnet)
+  library(limma)
+  library(pROC)
+  library(OptimalCutpoints)
   if (filter == "none") {
     X1 <- X
   }
@@ -25,14 +26,22 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
       n = nrow(fit))
     X1 <- X[, rownames(top)[1:topranked]]
   }
+  if(is.null(keepVar)){
+    penalty.factor <- rep(1, ncol(X1))
+    X2 <- X1
+  } else {
+    X1 <- X1[, setdiff(colnames(X1), keepVar)]
+    X2 <- as.matrix(cbind(X1, X[, keepVar]))
+    colnames(X2) <- c(colnames(X1), keepVar)
+    penalty.factor <- c(rep(1, ncol(X1)), rep(0, length(keepVar)))
+  }
 
   if (family == "binomial") {
-    fit <- glmnet(X1, Y, family = "binomial", alpha = alpha)
-    cv.fit <- cv.glmnet(X1, Y, family = "binomial")
+    fit <- glmnet(X2, Y, family = "binomial", alpha = alpha, penalty.factor=penalty.factor)
+    cv.fit <- cv.glmnet(X2, Y, family = "binomial")
     if (is.null(lambda)) {
       lambda = cv.fit$lambda.min
-    }
-    else {
+    } else {
       lambda = lambda
     }
     Coefficients <- coef(fit, s = lambda)
@@ -42,13 +51,12 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
     enet.panel.length <- length(enet.panel)
   }
   if (family == "multinomial") {
-    fit <- glmnet(X1, Y, family = "multinomial", alpha = alpha,
-      type.multinomial = "grouped")
-    cv.fit <- cv.glmnet(X1, Y, family = "multinomial")
+    fit <- glmnet(X2, Y, family = "multinomial", alpha = alpha,
+      type.multinomial = "grouped", penalty.factor=penalty.factor)
+    cv.fit <- cv.glmnet(X2, Y, family = "multinomial")
     if (is.null(lambda)) {
       lambda = cv.fit$lambda.min
-    }
-    else {
+    } else {
       lambda = lambda
     }
     Coefficients <- coef(fit, s = lambda)
@@ -61,14 +69,13 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
   if (!is.null(X.test)) {
     library(pROC)
     library(OptimalCutpoints)
-    probs <- predict(fit, newx = X.test, s = lambda, type = "response")
+    probs <- predict(fit, newx = X.test[, colnames(X2)], s = lambda, type = "response")
     predictResponse <- unlist(predict(fit, newx = X.test,
       s = lambda, type = "class"))
     if (family == "binomial") {
       perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)),
         trueLabels = Y.test)
-    }
-    else {
+    } else {
       mat <- table(factor(as.character(predictResponse),
         levels = levels(Y.test)), Y.test)
       mat2 <- mat
@@ -79,14 +86,13 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
       perfTest <- c(classError, er, ber)
       names(perfTest) <- c(names(classError), "ER", "BER")
     }
-  }
-  else {
+  } else {
     perfTest <- predictResponse <- probs <- NA
   }
   return(list(X = X, Y = Y, fit = fit, enet.panel = enet.panel,
     lambda = lambda, alpha = alpha, family = family, probs = probs,
     Active.Coefficients = Active.Coefficients, perfTest = perfTest,
-    predictResponse = predictResponse, filter = filter, topranked = topranked))
+    predictResponse = predictResponse, filter = filter, topranked = topranked, keepVar=keepVar))
 }
 
 #' interal function (enet cross-validation)
@@ -101,10 +107,11 @@ enet = function (X, Y, alpha, lambda = NULL, family, X.test = NULL,
 #' @param topranked = 50 (top number of features to select and build a classifier)
 #' @export
 enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
-  filter, topranked)
-{
-  library(pROC); library(limma); library(glmnet); library(OptimalCutpoints)
-
+  filter, topranked, keepVar) {
+  library(pROC)
+  library(limma)
+  library(glmnet)
+  library(OptimalCutpoints)
   probs <- predictResponseList <- enet.panel <- list()
   if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
@@ -114,21 +121,32 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
     omit = folds[[i]]
     X.train = X[-omit, , drop = FALSE]
     Y.train = Y[-omit]
-
     if (filter == "none") {
       X.train1 <- X.train
     }
     if (filter == "p.value") {
       design <- model.matrix(~Y.train)
       fit <- eBayes(lmFit(t(X.train), design))
-      top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
-      X.train1 <- X.train[, rownames(top)[1:topranked], drop = FALSE]
+      top <- topTable(fit, coef = 2, adjust.method = "BH",
+        n = nrow(fit))
+      X.train1 <- X.train[, rownames(top)[1:topranked],
+        drop = FALSE]
     }
-    X.test1 = X[omit, colnames(X.train1), drop = FALSE]
+    if(is.null(keepVar)){
+      penalty.factor <- rep(1, ncol(X.train1))
+      X.train2 <- X.train1
+    } else {
+      X.train1 <- X.train1[, setdiff(colnames(X.train1), keepVar)]
+      X.train2 <- as.matrix(cbind(X.train1, X.train[, keepVar]))
+      colnames(X.train2) <- c(colnames(X.train1), keepVar)
+      penalty.factor <- c(rep(1, ncol(X.train1)), rep(0, length(keepVar)))
+    }
 
+
+    X.test1 = X[omit, colnames(X.train2), drop = FALSE]
     if (family == "binomial") {
-      fit <- glmnet(X.train1, Y.train, family = "binomial", alpha = alpha)
-      cv.fit <- cv.glmnet(X.train1, Y.train, family = "binomial")
+      fit <- glmnet(X.train2, Y.train, family = "binomial", alpha = alpha, penalty.factor=penalty.factor)
+      cv.fit <- cv.glmnet(X.train2, Y.train, family = "binomial")
       if (is.null(lambda)) {
         lambda = cv.fit$lambda.min
       }
@@ -137,13 +155,14 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
       }
       Coefficients <- coef(fit, s = lambda)
       Active.Index <- which(Coefficients[, 1] != 0)
-      Active.Coefficients <- Coefficients[Active.Index, ]
+      Active.Coefficients <- Coefficients[Active.Index,
+        ]
       enet.panel[[i]] <- names(Active.Coefficients)[-1]
     }
     if (family == "multinomial") {
-      fit <- glmnet(X.train1, Y.train, family = "multinomial", alpha = alpha,
-        type.multinomial = "grouped")
-      cv.fit <- cv.glmnet(X.train1, Y.train, family = "multinomial")
+      fit <- glmnet(X.train2, Y.train, family = "multinomial",
+        alpha = alpha, type.multinomial = "grouped", penalty.factor=penalty.factor)
+      cv.fit <- cv.glmnet(X.train2, Y.train, family = "multinomial")
       if (is.null(lambda)) {
         lambda = cv.fit$lambda.min
       }
@@ -156,9 +175,10 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
         ]
       enet.panel[[i]] <- names(Active.Coefficients)[-1]
     }
-
-    probs[[i]] <- predict(fit, newx = X.test1, s = lambda, type = "response")
-    predictResponseList[[i]] <- predict(fit, newx = X.test1, s = lambda, type = "class")
+    probs[[i]] <- predict(fit, newx = X.test1, s = lambda,
+      type = "response")
+    predictResponseList[[i]] <- predict(fit, newx = X.test1,
+      s = lambda, type = "class")
   }
   predictResponse <- unlist(predictResponseList)
   if (family == "binomial") {
@@ -170,7 +190,8 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
   }
   else {
     trueLabels = Y[unlist(folds)]
-    mat <- table(factor(trueLabels, levels(Y)), factor(predictResponse, levels(Y)))
+    mat <- table(factor(trueLabels, levels(Y)), factor(predictResponse,
+      levels(Y)))
     mat2 <- mat
     diag(mat2) <- 0
     classError <- colSums(mat2)/colSums(mat)
@@ -197,8 +218,7 @@ enetCV = function (X, Y, alpha, lambda, M, folds, progressBar, family,
 #' @param progressBar - show progressbar (TRUE/FALE)
 #' @export
 perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
-  threads = 4, progressBar = TRUE)
-{
+  threads = 4, progressBar = TRUE) {
   library(dplyr)
   library(tidyr)
   X = object$X
@@ -209,23 +229,24 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   lambda = object$lambda
   filter = object$filter
   topranked = object$topranked
+  penalty.factor = object$keepVar
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y,
-      k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores",
       threads))
     parallel::clusterExport(cl, varlist = c("enetCV", "enet",
       "X", "Y", "alpha", "lambda", "M", "folds", "progressBar",
-      "family", "filter", "topranked"), envir = environment())
+      "family", "filter", "topranked", "keepVar"), envir = environment())
     cv <- parallel::parLapply(cl, folds, function(foldsi,
       X, Y, alpha, lambda, M, progressBar, family, filter,
-      topranked) {
+      topranked, keepVar) {
       enetCV(X = X, Y = Y, alpha = alpha, lambda = lambda,
         M = M, folds = foldsi, progressBar = progressBar,
-        family = family, filter = filter, topranked = topranked)
+        family = family, filter = filter, topranked = topranked,
+        keepVar=keepVar)
     }, X, Y, alpha, lambda, M, progressBar, family, filter,
-      topranked) %>% amritr::zip_nPure()
+      topranked, keepVar) %>% amritr::zip_nPure()
     parallel::stopCluster(cl)
     perf <- do.call(rbind, cv$perf) %>% as.data.frame %>%
       gather(ErrName, Err) %>% dplyr::group_by(ErrName) %>%
@@ -235,7 +256,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
     folds = split(1:n, rep(1:n, length = n))
     M = n
     cv <- enetCV(X, Y, alpha, lambda, M, folds, progressBar,
-      family, filter, topranked)
+      family, filter, topranked, keepVar)
     perf <- data.frame(Mean = cv$perf) %>% mutate(ErrName = rownames(.))
     perf$SD <- NA
   }
