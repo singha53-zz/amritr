@@ -229,7 +229,7 @@ perf.enet = function (object, validation = c("Mfold", "loo"), M = 5, iter = 10,
   lambda = object$lambda
   filter = object$filter
   topranked = object$topranked
-  penalty.factor = object$keepVar
+  keepVar = object$keepVar
   if (validation == "Mfold") {
     folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
     require(parallel)
