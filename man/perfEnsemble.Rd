@@ -4,8 +4,8 @@
 \alias{perfEnsemble}
 \title{Estimate test error using repeated cross-validation}
 \usage{
-perfEnsemble(object, validation = "Mfold", M = M, iter = iter,
-  threads = threads, progressBar = TRUE)
+perfEnsemble(object, validation = "Mfold", M = 5, iter = 5, threads = 5,
+  progressBar = TRUE)
 }
 \arguments{
 \item{object}{- ensembleEnet object}

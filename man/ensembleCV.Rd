@@ -4,16 +4,13 @@
 \alias{ensembleCV}
 \title{Estimate cross-validation using cross-validation}
 \usage{
-ensembleCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
+ensembleCV(X.trainList, Y.train, alphaList, lambdaList, family, filter,
+  topranked, keepVarList, M, folds, progressBar)
 }
 \arguments{
-\item{X}{- list of training datasets (nxpi); i number of elements}
+\item{filter}{- "none" or "p.value"}
 
-\item{Y}{- n-vector of class labels}
-
-\item{alpha}{= list of alpha values}
-
-\item{lambda}{= list of lambda values}
+\item{topranked}{- # of significant features to use to build classifier}
 
 \item{M}{- # of folds}
 
@@ -21,9 +18,13 @@ ensembleCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
 
 \item{progressBar}{(TRUE/FALSE) - show progress bar or not}
 
-\item{filter}{- "none" or "p.value"}
+\item{X}{- list of training datasets (nxpi); i number of elements}
 
-\item{topranked}{- # of significant features to use to build classifier}
+\item{Y}{- n-vector of class labels}
+
+\item{alpha}{= list of alpha values}
+
+\item{lambda}{= list of lambda values}
 }
 \description{
 Estimate cross-validation using cross-validation

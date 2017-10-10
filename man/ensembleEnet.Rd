@@ -4,21 +4,21 @@
 \alias{ensembleEnet}
 \title{Build ensemble classification panel}
 \usage{
-ensembleEnet(X.train, Y.train, alphaList, lambdaList, X.test, Y.test, filter,
-  topranked)
+ensembleEnet(X.trainList, Y.train, alphaList, lambdaList, family = "binomial",
+  X.testList, Y.test, filter, topranked, keepVarList)
 }
 \arguments{
-\item{X.train}{- list of training datasets (nxpi); i number of elements}
-
 \item{Y.train}{- n-vector of class labels}
 
-\item{X.test}{- list of test datasets (nxpi); i number of elements}
-
 \item{Y.test}{- n-vector of class labels}
+
+\item{X.train}{- list of training datasets (nxpi); i number of elements}
 
 \item{alpha}{= list of alpha values}
 
 \item{lambda}{= list of lambda values}
+
+\item{X.test}{- list of test datasets (nxpi); i number of elements}
 }
 \description{
 takes in predited weights and true labels and determines performance characterisitcs

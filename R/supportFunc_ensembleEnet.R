@@ -8,68 +8,114 @@
 #' @param X.test - list of test datasets (nxpi); i number of elements
 #' @param Y.test - n-vector of class labels
 #' @export
-ensembleEnet = function(X.train, Y.train, alphaList, lambdaList, X.test, Y.test, filter, topranked){
-  if(is.null(X.test)){  ## run if no test set is provided (only build ensemble models)
-    result <- mapply(function(X.train, alpha, lambda) {
-      enet(X = X.train, Y = Y.train, alpha = alpha, lambda = lambda, family = "multinomial", X.test = NULL,
-        Y.test = NULL, filter = filter, topranked = topranked)
-    }, X.train = X.train, alpha = alphaList, lambda = lambdaList, SIMPLIFY = FALSE)
-    Y.vote <- error <- NA
-  } else { ## run if test set is provided
-    if(length(X.train) == length(X.test)){   ## if the same numbers of train and test datasets are available
-      result <- mapply(function(X.train, X.test, alpha, lambda) {
-        enet(X = X.train, Y = Y.train, alpha = alpha, lambda = lambda, family = "multinomial", X.test = X.test,
-          Y.test = Y.test, filter = filter, topranked = topranked)
-      }, X.train = X.train, X.test = X.test, alpha = alphaList, lambda = lambdaList, SIMPLIFY = FALSE)
-      predConcat <- do.call(cbind, lapply(result, function(i) {
-        i$predictResponse
-      }))
-      Y.vote <- apply(predConcat, 1, function(z) {
-        temp = table(z)
-        if (length(names(temp)[temp == max(temp)]) > 1) {
-          "zz"
-        }
-        else {
-          names(temp)[temp == max(temp)]
-        }
-      })
-      temp = table(pred = factor(Y.vote, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
-      diag(temp) <- 0
-      error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
-        mean(colSums(temp)/summary(Y.test)))
-      names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
-    } else { ## if the different numbers of train and test datasets are available
-      comDataset <- intersect(names(X.train), names(X.test))
-      X.train <- X.train[comDataset]
-      X.test <- X.test[comDataset]
-      alphaList <- alphaList[comDataset]
-      lambdaList <- lambdaList[comDataset]
+ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "binomial",
+  X.testList, Y.test, filter, topranked, keepVarList){
 
-      result <- mapply(function(X.train, X.test, alpha, lambda) {
-        enet(X = X.train, Y = Y.train, alpha = alpha, lambda = lambda, family = "multinomial", X.test = X.test,
-          Y.test = Y.test, filter = filter, topranked = topranked)
-      }, X.train = X.train, X.test = X.test, alpha = alphaList, lambda = lambdaList, SIMPLIFY = FALSE)
-      predConcat <- do.call(cbind, lapply(result, function(i) {
-        i$predictResponse
-      }))
-      Y.vote <- apply(predConcat, 1, function(z) {
-        temp = table(z)
-        if (length(names(temp)[temp == max(temp)]) > 1) { "zz"
-        }
-        else {
-          names(temp)[temp == max(temp)]
-        }
-      })
-      temp = table(pred = factor(Y.vote, levels = c(levels(Y.test), "zz")), truth = unlist(Y.test))
-      diag(temp) <- 0
-      error = c(colSums(temp)/summary(Y.test), sum(temp)/length(Y.test),
-        mean(colSums(temp)/summary(Y.test)))
-      names(error) <- c(names(error)[1:nlevels(Y.test)], "ER", "BER")
-    }
+  ## load libraries
+  library(glmnet); library(limma); library(pROC);
+  library(OptimalCutpoints); library(tidyverse);
+
+  ## perform pre-filtering (none, p-value, and keep certain variables)
+  if (filter == "none") {
+    X1.trainList <- X.trainList
+  }
+  if (filter == "p.value") {
+    X1.trainList <- lapply(X.trainList, function(i){
+      design <- model.matrix(~Y.train)
+      fit <- eBayes(lmFit(t(i), design))
+      top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
+      i[, rownames(top)[1:topranked]]
+    })
+  }
+  if (is.null(keepVarList)) {
+    penalty.factorList <- lapply(X1.trainList, function(i){rep(1, ncol(i))})
+    X2.trainList  <- X1.trainList
+  } else {
+    X2.trainList <- mapply(function(x, x1, y){
+      X1 <- x1[, setdiff(colnames(x1), y)]
+      X2 <- as.matrix(cbind(X1, x[, y]))
+      colnames(X2) <- c(colnames(X1), y)
+      X2
+    }, x = X.trainList, x1 = X1.trainList, y = keepVarList)
+
+    penalty.factorList <- mapply(function(x, y){
+      c(rep(1, ncol(X1)), rep(0, length(keepVar)))
+    }, x = X1.trainList, y = keepVarList)
   }
 
-  return(list(result = result, Y.vote = Y.vote, perfTest = error, X.train = X.train, Y.train = Y.train, alphaList = alphaList, lambdaList = lambdaList, filter = filter, topranked = topranked))
+  ## build glmnet classifier
+  model <- mapply(function(X, alpha, lambda, penalty.factor){
+    if(family == "binomial") {
+      fit <- glmnet(X, Y.train, family = "binomial", alpha = alpha,
+        penalty.factor = penalty.factor)
+      cv.fit <- cv.glmnet(X, Y.train, family = "binomial")
+    } else {
+      fit <- glmnet(X, Y.train, family = "multinomial", alpha = alpha,
+        type.multinomial = "grouped", penalty.factor = penalty.factor)
+      cv.fit <- cv.glmnet(X, Y.train, family = "multinomial")
+    }
+    if(is.null(lambda)) {lambda = cv.fit$lambda.min} else {lambda = lambda}
+    Coefficients <- coef(fit, s = lambda)
+    if(family == "binomial"){
+      Active.Index <- which(Coefficients[, 1] != 0)
+      Active.Coefficients <- Coefficients[Active.Index, ]
+    } else {
+      Active.Index <- which(Coefficients[[1]][, 1] != 0)
+      Active.Coefficients <- Coefficients[[1]][Active.Index, ]
+    }
+    enet.panel <- names(Active.Coefficients)[-1]
+    enet.panel.length <- length(enet.panel)
+    return(list(fit=fit, Coefficients=Coefficients, Active.Index=Active.Index, lambda = lambda,
+      Active.Coefficients=Active.Coefficients, enet.panel=enet.panel, enet.panel.length=enet.panel.length))
+  }, X = X2.trainList, alpha = alphaList, lambda = lambdaList, penalty.factor = penalty.factorList, SIMPLIFY = FALSE)
+
+  ## Test performance in test dataset
+  if(!is.null(X.testList)){
+    if(!all(sapply(1 : length(X.trainList), function(i) any(colnames(X.trainList[[i]]) == colnames(X.testList[[i]])))))
+      stop("features of the train and test datasets are not in the same order")
+    if(!any(levels(Y.train) == levels(Y.test)))
+      stop("levels of Y.train and Y.test are not in the same order")
+
+    testPerf <- mapply(function(mod, test){
+      predictResponse <- unlist(predict(mod$fit, newx = test[, rownames(mod$Coefficients)[-1]], s = mod$lambda, type = "class"))
+      probs <- predict(mod$fit, newx = test[, rownames(mod$Coefficients)[-1]], s = mod$lambda, type = "response") %>% as.numeric
+      names(probs) <- rownames(predictResponse)
+      predictResponse <- as.character(predictResponse)
+      names(predictResponse) <- names(probs)
+
+      ## compute error rate
+      mat <- table(pred=factor(as.character(predictResponse), levels = levels(Y.train)), truth=Y.test)
+      mat2 <- mat
+      diag(mat2) <- 0
+      classError <- colSums(mat2)/colSums(mat)
+      er <- sum(mat2)/sum(mat)
+      ber <- mean(classError)
+      error <- c(classError, er, ber) %>% matrix
+      rownames(error) <- c(names(classError), "Overall", "Balanced")
+      colnames(error) <- "Error_0.5"
+
+      ## compute AUROC
+      if(length(Y.test) > 1) {
+        if(nlevels(Y.train) == 2){
+          Y.test <- factor(as.character(Y.test), levels(Y.train))
+          perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = Y.test) %>% as.matrix
+          colnames(perfTest) <- paste(levels(Y.train), collapse = "_vs_")
+        } else {
+          perfTest <- NA
+        }
+      } else {
+        perfTest <- NA
+      }
+
+      return(list(probs=probs, predictResponse=predictResponse, error=error, perfTest=perfTest))
+    }, mod = model, test = X.testList, SIMPLIFY = FALSE)
+  } else {testPerf <- NA}
+
+  return(list(model=model, testPerf=testPerf, X.trainList=X.trainList,
+    Y.train=Y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, X.testList=X.testList,
+    Y.test=Y.test, filter=filter, topranked=topranked, keepVarList=keepVarList))
 }
+
 
 #' Estimate test error using repeated cross-validation
 #'
@@ -81,43 +127,53 @@ ensembleEnet = function(X.train, Y.train, alphaList, lambdaList, X.test, Y.test,
 #' @param threads - # of cores, running each iteration on a separate node
 #' @param progressBar = TRUE (show progress bar or not)
 #' @export
-perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, threads = threads,
-  progressBar = TRUE){
-  library(dplyr)
-  X <- object$X.train
-  Y = object$Y.train
-  n = length(Y)
-  alpha = object$alphaList
-  lambda = object$lambdaList
-  filter = object$filter
-  topranked = object$topranked
+perfEnsemble = function(object, validation = "Mfold", M = 5, iter = 5, threads = 5, progressBar = TRUE){
+  library(tidyverse)
+  X.trainList=object$X.trainList
+  Y.train=object$Y.train
+  alphaList=object$alphaList
+  lambdaList=object$lambdaList
+  family=object$family
+  filter=object$filter
+  topranked=object$topranked
+  keepVarList=object$keepVarList
+
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(Y.train, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
     parallel::clusterExport(cl, varlist = c("ensembleCV",
-      "ensembleEnet", "enet", "X", "Y", "alpha", "lambda",
-      "M", "folds", "progressBar", "filter", "topranked"), envir = environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi,
-      X, Y, alpha, lambda, M, progressBar, filter, topranked) {
-      ensembleCV(X = X, Y = Y, alpha = alpha, lambda = lambda,
-        M = M, folds = foldsi, progressBar = progressBar, filter = filter, topranked = topranked)
-    }, X, Y, alpha, lambda, M, progressBar, filter, topranked) %>% amritr::zip_nPure()
+      "ensembleEnet", "X.trainList", "Y.train", "alphaList", "lambdaList",
+      "family", "filter", "topranked", "keepVarList",
+      "M", "folds", "progressBar"),
+      envir = environment())
+    cv <- parallel::parLapply(cl, folds, function(foldsi, X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked, keepVarList, M, progressBar) {
+      ensembleCV(X.trainList=X.trainList, Y.train=Y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, filter=filter, topranked=topranked, keepVarList=keepVarList, M=M, folds=foldsi, progressBar=progressBar)
+    }, X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
+      keepVarList, M, progressBar) %>%
+      amritr::zip_nPure()
     parallel::stopCluster(cl)
-    perf <- do.call(rbind, cv$error) %>% as.data.frame %>%
-      tidyr::gather(ErrName, Err) %>%
+    error <- do.call(rbind, cv$error) %>% as.data.frame %>%
+      mutate(ErrName = factor(rownames(.), unique(rownames(.)))) %>%
       dplyr::group_by(ErrName) %>%
-      dplyr::summarise(Mean = mean(Err), SD = sd(Err))
+      dplyr::summarise(Mean = mean(Error_0.5), SD = sd(Error_0.5))
+    perfTest <- do.call(rbind, cv$perfTest) %>% as.data.frame %>%
+      mutate(ErrName = factor(rownames(.), unique(rownames(.)))) %>%
+      dplyr::group_by(ErrName) %>%
+      dplyr::summarise(Mean = mean(perf), SD = sd(perf))
   }
   else {
+    n <- length(Y.train)
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- ensembleCV(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked)
-    perf <- data.frame(Mean = cv$error) %>% mutate(ErrName = rownames(.))
-    perf$SD <- NA
+    cv <- ensembleCV(X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
+      keepVarList, M, folds, progressBar)
+    error <- cv$error
+    perfTest <- cv$perfTest
   }
   result = list()
-  result$perf = perf
+  result$error = error
+  result$perfTest = perfTest
   method = "enetEnsemble.mthd"
   result$meth = "enetEnsemble.mthd"
   class(result) = c("perf", method)
@@ -137,56 +193,70 @@ perfEnsemble = function(object, validation = "Mfold", M = M, iter = iter, thread
 #' @param filter - "none" or "p.value"
 #' @param topranked - # of significant features to use to build classifier
 #' @export
-ensembleCV = function(X, Y, alpha, lambda, M, folds, progressBar, filter, topranked){
-  J <- length(X)
+ensembleCV = function (X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
+  keepVarList, M, folds, progressBar){
+  J <- length(X.trainList)
   assign("X.training", NULL, pos = 1)
   assign("Y.training", NULL, pos = 1)
   X.training = lapply(folds, function(x) {
     lapply(1:J, function(y) {
-      X[[y]][-x, ]
+      X.trainList[[y]][-x, , drop = FALSE]
     })
   })
   Y.training = lapply(folds, function(x) {
-    Y[-x]
+    Y.train[-x]
   })
   X.test = lapply(folds, function(x) {
     lapply(1:J, function(y) {
-      X[[y]][x, , drop = FALSE]
+      X.trainList[[y]][x, , drop = FALSE]
     })
   })
   Y.test = lapply(folds, function(x) {
-    Y[x]
+    Y.train[x]
   })
-  predConcatList <- list()
+  avgProbList <- list()
   if (progressBar == TRUE)
     pb <- txtProgressBar(style = 3)
   for (i in 1:M) {
     if (progressBar == TRUE)
       setTxtProgressBar(pb, i/M)
-    result <- mapply(function(X.train, X.test, alpha, lambda) {
-      enet(X.train, Y.training[[i]], alpha = alpha, lambda = lambda,
-        X.test = X.test, Y.test = Y.test[[i]], family = "multinomial", filter = filter, topranked = topranked)
-    }, X.train = X.training[[i]], X.test = X.test[[i]], alpha = alpha, lambda = lambda, SIMPLIFY = FALSE)
-    predConcatList[[i]] <- do.call(cbind, lapply(result,
+    ## build ensemble panel
+    result <- ensembleEnet(X.trainList=X.training[[i]], Y.train=Y.training[[i]],
+      alphaList, lambdaList, family = family,
+      X.testList=X.test[[i]], Y.test=Y.test[[i]], filter, topranked, keepVarList)
+    # combine predictions using average probability
+    avgProbList[[i]] <- do.call(cbind, lapply(result$testPerf,
       function(i) {
-        i$predictResponse
-      }))
+        i$probs
+      })) %>% rowMeans
   }
-  predConcat <- do.call(rbind, predConcatList)
-  Y.vote <- apply(predConcat, 1, function(z) {
-    temp = table(z)
-    if (length(names(temp)[temp == max(temp)]) > 1) {
-      "zz"
-    }
-    else {
-      names(temp)[temp == max(temp)]
-    }
-  })
-  temp = table(pred = factor(Y.vote, levels = c(levels(Y),
-    "zz")), truth = unlist(Y)[unlist(folds)])
-  diag(temp) <- 0
-  error = c(colSums(temp)/summary(Y), sum(temp)/length(Y),
-    mean(colSums(temp)/summary(Y)))
-  names(error) <- c(names(error)[1:nlevels(Y)], "ER", "BER")
-  return(list(error = error))
+
+  probs <- unlist(avgProbList)
+  ## Error and AUROC
+  predictResponse <- rep(levels(Y.train)[1], length(probs))
+  predictResponse[probs >= 0.5] <- levels(Y.train)[2]
+
+  ## compute error rate
+  truth <- sapply(strsplit(names(unlist(Y.test)), "\\."), function(i) i[2])
+  if(!all(names(probs) == truth))
+    stop("predicted probability is not in the same order as the test labels")
+  mat <- table(pred=factor(as.character(predictResponse), levels = levels(Y.train)), truth=unlist(Y.test))
+  mat2 <- mat
+  diag(mat2) <- 0
+  classError <- colSums(mat2)/colSums(mat)
+  er <- sum(mat2)/sum(mat)
+  ber <- mean(classError)
+  error <- c(classError, er, ber) %>% matrix
+  rownames(error) <- c(names(classError), "Overall", "Balanced")
+  colnames(error) <- "Error_0.5"
+
+  ## compute AUROC
+  if(nlevels(Y.train) == 2){
+    perfTest <- amritr::tperformance(weights = probs, trueLabels = unlist(Y.test)) %>% as.matrix
+    colnames(perfTest) <- "perf"
+  } else {
+    perfTest <- NA
+  }
+
+  return(list(error = error, perfTest = perfTest))
 }
