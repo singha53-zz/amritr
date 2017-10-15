@@ -2,7 +2,7 @@
 % Please edit documentation in R/supportFunc_ensembleEnet.R
 \name{perf.ensembleEnet}
 \alias{perf.ensembleEnet}
-\title{Estimate classification performance using repeated cross-validation}
+\title{Estimate classification performance using repeated cross-validation using an elastic net classifier}
 \usage{
 perf.ensembleEnet(object, validation = "Mfold", M = 5, iter = 5,
   threads = 5, progressBar = TRUE)
@@ -21,5 +21,5 @@ perf.ensembleEnet(object, validation = "Mfold", M = 5, iter = 5,
 \item{progressBar}{= TRUE (show progress bar or not)}
 }
 \description{
-Estimate classification performance using repeated cross-validation
+Estimate classification performance using repeated cross-validation using an elastic net classifier
 }

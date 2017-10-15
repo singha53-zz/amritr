@@ -2,40 +2,40 @@
 % Please edit documentation in R/supportFunc_ensembleEnet.R
 \name{ensembleEnetCV}
 \alias{ensembleEnetCV}
-\title{Estimate classification performance using cross-validation}
+\title{Estimate classification performance using cross-validation using an elastic net classifier}
 \usage{
 ensembleEnetCV(X.trainList, y.train, alphaList, lambdaList,
   family = "binomial", filter = "none", topranked = 50,
   keepVarList = NULL, M = 5, folds = 5, progressBar = FALSE)
 }
 \arguments{
-\item{X.trainList}{- list of training datasets (nxpi); i number of elements}
+\item{X.trainList}{list of training datasets (nxpi); i number of elements}
 
-\item{y.train}{- n-vector of class labels (must be a factor)}
+\item{y.train}{n-vector of class labels (must be a factor)}
 
-\item{alphaList}{= list of alpha values}
+\item{alphaList}{list of alpha values}
 
-\item{lambdaList}{= list of lambda values}
+\item{lambdaList}{list of lambda values}
 
-\item{family}{- can be "binomial" or "multinomial"}
+\item{family}{can be "binomial" or "multinomial"}
 
-\item{filter}{- pre-filtering of initial datasets - "none" or "p.value"}
+\item{filter}{pre-filtering of initial datasets - "none" or "p.value"}
 
-\item{topranked}{- Number of topranked features based on differential expression to use to build classifer}
+\item{topranked}{Number of topranked features based on differential expression to use to build classifer}
 
-\item{keepVarList}{- which variables to keep and not omit (set to NULL if no variables are forced to be kept)}
+\item{keepVarList}{which variables to keep and not omit (set to NULL if no variables are forced to be kept)}
 
-\item{M}{- # of folds}
+\item{M}{# of folds}
 
-\item{folds}{- list of length M, where each element contains the indices for samples for a given fold}
+\item{folds}{list of length M, where each element contains the indices for samples for a given fold}
 
 \item{progressBar}{(TRUE/FALSE) - show progress bar or not}
 }
 \value{
-error - computes error rate (each group, overall and balanced error rate)
+error computes error rate (each group, overall and balanced error rate)
 
-perfTest - classification performance measures
+perfTest classification performance measures
 }
 \description{
-Estimate classification performance using cross-validation
+Estimate classification performance using cross-validation using an elastic net classifier
 }

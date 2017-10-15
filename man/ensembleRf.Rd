@@ -2,17 +2,53 @@
 % Please edit documentation in R/supportFunc_ensembleRf.R
 \name{ensembleRf}
 \alias{ensembleRf}
-\title{table of classification performances}
+\title{Build ensemble random forest classification panel}
 \usage{
-ensembleRf(X.train, Y.train, X.test, Y.test)
+ensembleRf(X.trainList, y.train, panelLength = 15, X.testList = NULL,
+  y.test = NULL, filter = "none", topranked = 50, keepVarList = NULL)
 }
 \arguments{
-\item{weights}{are the predicted scores/probablities of test data}
+\item{X.trainList}{list of training datasets (nxpi); i number of elements}
 
-\item{trubeLabels}{are the true labels associated with the test data}
+\item{y.train}{n-vector of class labels (must be a factor)}
 
-\item{direction}{= "auto", ">", "<"}
+\item{panelLength}{number of variables to select based on the Importance score}
+
+\item{X.testList}{list of test datasets (nxpi); i number of elements}
+
+\item{y.test}{n-vector of class labels (must be a factor)}
+
+\item{filter}{pre-filtering of initial datasets - "none" or "p.value"}
+
+\item{topranked}{Number of topranked features based on differential expression to use to build classifer}
+
+\item{keepVarList}{which variables to keep and not omit (set to NULL if no variables are forced to be kept)}
+}
+\value{
+model
+
+testPerf
+
+X.trainList
+
+y.train
+
+alphaList
+
+lambdaList
+
+family
+
+X.testList
+
+y.test
+
+filter
+
+topranked
+
+keepVarList
 }
 \description{
-takes in predited weights and true labels and determines performance characterisitcs
+Build ensemble random forest classification panel
 }

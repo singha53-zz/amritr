@@ -134,7 +134,7 @@ ensembleEnet = function(X.trainList, y.train, alphaList, lambdaList, family = "b
 
 
 
-#' Estimate classification performance using repeated cross-validation
+#' Estimate classification performance using repeated cross-validation using an elastic net classifier
 #'
 #'
 #' @param object - ensembleEnet object
@@ -198,21 +198,21 @@ perf.ensembleEnet = function(object, validation = "Mfold", M = 5, iter = 5, thre
 }
 
 
-#' Estimate classification performance using cross-validation
+#' Estimate classification performance using cross-validation using an elastic net classifier
 #'
-#' @param X.trainList - list of training datasets (nxpi); i number of elements
-#' @param y.train - n-vector of class labels (must be a factor)
-#' @param alphaList = list of alpha values
-#' @param lambdaList = list of lambda values
-#' @param family - can be "binomial" or "multinomial"
-#' @param filter - pre-filtering of initial datasets - "none" or "p.value"
-#' @param topranked - Number of topranked features based on differential expression to use to build classifer
-#' @param keepVarList - which variables to keep and not omit (set to NULL if no variables are forced to be kept)
-#' @param M - # of folds
-#' @param folds - list of length M, where each element contains the indices for samples for a given fold
+#' @param X.trainList list of training datasets (nxpi); i number of elements
+#' @param y.train n-vector of class labels (must be a factor)
+#' @param alphaList list of alpha values
+#' @param lambdaList list of lambda values
+#' @param family can be "binomial" or "multinomial"
+#' @param filter pre-filtering of initial datasets - "none" or "p.value"
+#' @param topranked Number of topranked features based on differential expression to use to build classifer
+#' @param keepVarList which variables to keep and not omit (set to NULL if no variables are forced to be kept)
+#' @param M # of folds
+#' @param folds list of length M, where each element contains the indices for samples for a given fold
 #' @param progressBar (TRUE/FALSE) - show progress bar or not
-#' @return error - computes error rate (each group, overall and balanced error rate)
-#' @return perfTest - classification performance measures
+#' @return error computes error rate (each group, overall and balanced error rate)
+#' @return perfTest classification performance measures
 #' @export
 ensembleEnetCV = function(X.trainList, y.train, alphaList, lambdaList, family="binomial", filter="none", topranked=50,
   keepVarList=NULL, M=5, folds=5, progressBar=FALSE){
