@@ -1,16 +1,32 @@
-#' Build ensemble classification panel
+#' Build ensemble enet classification panel
 #'
-#' takes in predited weights and true labels and determines performance characterisitcs
-#' @param X.train - list of training datasets (nxpi); i number of elements
-#' @param Y.train - n-vector of class labels
-#' @param alpha = list of alpha values
-#' @param lambda = list of lambda values
-#' @param X.test - list of test datasets (nxpi); i number of elements
-#' @param Y.test - n-vector of class labels
+#' @param X.trainList - list of training datasets (nxpi); i number of elements
+#' @param y.train - n-vector of class labels (must be a factor)
+#' @param alphaList = list of alpha values
+#' @param lambdaList = list of lambda values
+#' @param family - can be "binomial" or "multinomial"
+#' @param X.testList - list of test datasets (nxpi); i number of elements
+#' @param y.test - n-vector of class labels (must be a factor)
+#' @param filter - pre-filtering of initial datasets - "none" or "p.value"
+#' @param topranked - Number of topranked features based on differential expression to use to build classifer
+#' @param keepVarList - which variables to keep and not omit (set to NULL if no variables are forced to be kept)
+#' @return model
+#' @return testPerf
+#' @return X.trainList
+#' @return y.train
+#' @return alphaList
+#' @return lambdaList
+#' @return family
+#' @return X.testList
+#' @return y.test
+#' @return filter
+#' @return topranked
+#' @return keepVarList
 #' @export
-ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "binomial",
-  X.testList, Y.test, filter, topranked, keepVarList){
-
+ensembleEnet = function(X.trainList, y.train, alphaList, lambdaList, family = "binomial",
+  X.testList=NULL, y.test=NULL, filter="none", topranked=50, keepVarList=NULL){
+  if (class(y.train) == "character")
+    stop("y.train is not a factor")
   ## load libraries
   library(glmnet); library(limma); library(pROC);
   library(OptimalCutpoints); library(tidyverse);
@@ -21,7 +37,7 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
   }
   if (filter == "p.value") {
     X1.trainList <- lapply(X.trainList, function(i){
-      design <- model.matrix(~Y.train)
+      design <- model.matrix(~y.train)
       fit <- eBayes(lmFit(t(i), design))
       top <- topTable(fit, coef = 2, adjust.method = "BH", n = nrow(fit))
       i[, rownames(top)[1:topranked]]
@@ -46,13 +62,13 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
   ## build glmnet classifier
   model <- mapply(function(X, alpha, lambda, penalty.factor){
     if(family == "binomial") {
-      fit <- glmnet(X, Y.train, family = "binomial", alpha = alpha,
+      fit <- glmnet(X, y.train, family = "binomial", alpha = alpha,
         penalty.factor = penalty.factor)
-      cv.fit <- cv.glmnet(X, Y.train, family = "binomial")
+      cv.fit <- cv.glmnet(X, y.train, family = "binomial")
     } else {
-      fit <- glmnet(X, Y.train, family = "multinomial", alpha = alpha,
+      fit <- glmnet(X, y.train, family = "multinomial", alpha = alpha,
         type.multinomial = "grouped", penalty.factor = penalty.factor)
-      cv.fit <- cv.glmnet(X, Y.train, family = "multinomial")
+      cv.fit <- cv.glmnet(X, y.train, family = "multinomial")
     }
     if(is.null(lambda)) {lambda = cv.fit$lambda.min} else {lambda = lambda}
     Coefficients <- coef(fit, s = lambda)
@@ -73,8 +89,8 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
   if(!is.null(X.testList)){
     if(!all(sapply(1 : length(X.trainList), function(i) any(colnames(X.trainList[[i]]) == colnames(X.testList[[i]])))))
       stop("features of the train and test datasets are not in the same order")
-    if(!any(levels(Y.train) == levels(Y.test)))
-      stop("levels of Y.train and Y.test are not in the same order")
+    if(!any(levels(y.train) == levels(y.test)))
+      stop("levels of y.train and y.test are not in the same order")
 
     testPerf <- mapply(function(mod, test){
       predictResponse <- unlist(predict(mod$fit, newx = test[, rownames(mod$Coefficients)[-1]], s = mod$lambda, type = "class"))
@@ -84,7 +100,7 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
       names(predictResponse) <- names(probs)
 
       ## compute error rate
-      mat <- table(pred=factor(as.character(predictResponse), levels = levels(Y.train)), truth=Y.test)
+      mat <- table(pred=factor(as.character(predictResponse), levels = levels(y.train)), truth=y.test)
       mat2 <- mat
       diag(mat2) <- 0
       classError <- colSums(mat2)/colSums(mat)
@@ -95,11 +111,11 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
       colnames(error) <- "Error_0.5"
 
       ## compute AUROC
-      if(length(Y.test) > 1) {
-        if(nlevels(Y.train) == 2){
-          Y.test <- factor(as.character(Y.test), levels(Y.train))
-          perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = Y.test) %>% as.matrix
-          colnames(perfTest) <- paste(levels(Y.train), collapse = "_vs_")
+      if(length(y.test) > 1) {
+        if(nlevels(y.train) == 2){
+          y.test <- factor(as.character(y.test), levels(y.train))
+          perfTest <- amritr::tperformance(weights = as.numeric(as.matrix(probs)), trueLabels = y.test) %>% as.matrix
+          colnames(perfTest) <- paste(levels(y.train), collapse = "_vs_")
         } else {
           perfTest <- NA
         }
@@ -112,25 +128,26 @@ ensembleEnet = function (X.trainList, Y.train, alphaList, lambdaList, family = "
   } else {testPerf <- NA}
 
   return(list(model=model, testPerf=testPerf, X.trainList=X.trainList,
-    Y.train=Y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, X.testList=X.testList,
-    Y.test=Y.test, filter=filter, topranked=topranked, keepVarList=keepVarList))
+    y.train=y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, X.testList=X.testList,
+    y.test=y.test, filter=filter, topranked=topranked, keepVarList=keepVarList))
 }
 
 
-#' Estimate test error using repeated cross-validation
+
+#' Estimate classification performance using repeated cross-validation
 #'
 #'
 #' @param object - ensembleEnet object
-#' @param validation = Mfold or loo
+#' @param validation = "Mfold" or "loo"
 #' @param M - # of folds
 #' @param iter - Number of iterations of cross-validation
 #' @param threads - # of cores, running each iteration on a separate node
 #' @param progressBar = TRUE (show progress bar or not)
 #' @export
-perfEnsemble = function(object, validation = "Mfold", M = 5, iter = 5, threads = 5, progressBar = TRUE){
+perf.ensembleEnet = function(object, validation = "Mfold", M = 5, iter = 5, threads = 5, progressBar = TRUE){
   library(tidyverse)
   X.trainList=object$X.trainList
-  Y.train=object$Y.train
+  y.train=object$y.train
   alphaList=object$alphaList
   lambdaList=object$lambdaList
   family=object$family
@@ -139,17 +156,17 @@ perfEnsemble = function(object, validation = "Mfold", M = 5, iter = 5, threads =
   keepVarList=object$keepVarList
 
   if (validation == "Mfold") {
-    folds <- lapply(1:iter, function(i) createFolds(Y.train, k = M))
+    folds <- lapply(1:iter, function(i) createFolds(y.train, k = M))
     require(parallel)
     cl <- parallel::makeCluster(mc <- getOption("cl.cores", threads))
-    parallel::clusterExport(cl, varlist = c("ensembleCV",
-      "ensembleEnet", "X.trainList", "Y.train", "alphaList", "lambdaList",
+    parallel::clusterExport(cl, varlist = c("ensembleEnetCV",
+      "ensembleEnet", "X.trainList", "y.train", "alphaList", "lambdaList",
       "family", "filter", "topranked", "keepVarList",
       "M", "folds", "progressBar"),
       envir = environment())
-    cv <- parallel::parLapply(cl, folds, function(foldsi, X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked, keepVarList, M, progressBar) {
-      ensembleCV(X.trainList=X.trainList, Y.train=Y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, filter=filter, topranked=topranked, keepVarList=keepVarList, M=M, folds=foldsi, progressBar=progressBar)
-    }, X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
+    cv <- parallel::parLapply(cl, folds, function(foldsi, X.trainList, y.train, alphaList, lambdaList, family, filter, topranked, keepVarList, M, progressBar) {
+      ensembleEnetCV(X.trainList=X.trainList, y.train=y.train, alphaList=alphaList, lambdaList=lambdaList, family=family, filter=filter, topranked=topranked, keepVarList=keepVarList, M=M, folds=foldsi, progressBar=progressBar)
+    }, X.trainList, y.train, alphaList, lambdaList, family, filter, topranked,
       keepVarList, M, progressBar) %>%
       amritr::zip_nPure()
     parallel::stopCluster(cl)
@@ -163,10 +180,10 @@ perfEnsemble = function(object, validation = "Mfold", M = 5, iter = 5, threads =
       dplyr::summarise(Mean = mean(perf), SD = sd(perf))
   }
   else {
-    n <- length(Y.train)
+    n <- length(y.train)
     folds = split(1:n, rep(1:n, length = n))
     M = n
-    cv <- ensembleCV(X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
+    cv <- ensembleEnetCV(X.trainList, y.train, alphaList, lambdaList, family, filter, topranked,
       keepVarList, M, folds, progressBar)
     error <- cv$error
     perfTest <- cv$perfTest
@@ -180,39 +197,43 @@ perfEnsemble = function(object, validation = "Mfold", M = 5, iter = 5, threads =
   return(invisible(result))
 }
 
-#' Estimate cross-validation using cross-validation
+
+#' Estimate classification performance using cross-validation
 #'
-#'
-#' @param X - list of training datasets (nxpi); i number of elements
-#' @param Y - n-vector of class labels
-#' @param alpha = list of alpha values
-#' @param lambda = list of lambda values
+#' @param X.trainList - list of training datasets (nxpi); i number of elements
+#' @param y.train - n-vector of class labels (must be a factor)
+#' @param alphaList = list of alpha values
+#' @param lambdaList = list of lambda values
+#' @param family - can be "binomial" or "multinomial"
+#' @param filter - pre-filtering of initial datasets - "none" or "p.value"
+#' @param topranked - Number of topranked features based on differential expression to use to build classifer
+#' @param keepVarList - which variables to keep and not omit (set to NULL if no variables are forced to be kept)
 #' @param M - # of folds
 #' @param folds - list of length M, where each element contains the indices for samples for a given fold
 #' @param progressBar (TRUE/FALSE) - show progress bar or not
-#' @param filter - "none" or "p.value"
-#' @param topranked - # of significant features to use to build classifier
+#' @return error - computes error rate (each group, overall and balanced error rate)
+#' @return perfTest - classification performance measures
 #' @export
-ensembleCV = function (X.trainList, Y.train, alphaList, lambdaList, family, filter, topranked,
-  keepVarList, M, folds, progressBar){
+ensembleEnetCV = function(X.trainList, y.train, alphaList, lambdaList, family="binomial", filter="none", topranked=50,
+  keepVarList=NULL, M=5, folds=5, progressBar=FALSE){
   J <- length(X.trainList)
   assign("X.training", NULL, pos = 1)
-  assign("Y.training", NULL, pos = 1)
+  assign("y.training", NULL, pos = 1)
   X.training = lapply(folds, function(x) {
     lapply(1:J, function(y) {
       X.trainList[[y]][-x, , drop = FALSE]
     })
   })
-  Y.training = lapply(folds, function(x) {
-    Y.train[-x]
+  y.training = lapply(folds, function(x) {
+    y.train[-x]
   })
   X.test = lapply(folds, function(x) {
     lapply(1:J, function(y) {
       X.trainList[[y]][x, , drop = FALSE]
     })
   })
-  Y.test = lapply(folds, function(x) {
-    Y.train[x]
+  y.test = lapply(folds, function(x) {
+    y.train[x]
   })
   avgProbList <- list()
   if (progressBar == TRUE)
@@ -221,9 +242,9 @@ ensembleCV = function (X.trainList, Y.train, alphaList, lambdaList, family, filt
     if (progressBar == TRUE)
       setTxtProgressBar(pb, i/M)
     ## build ensemble panel
-    result <- ensembleEnet(X.trainList=X.training[[i]], Y.train=Y.training[[i]],
+    result <- ensembleEnet(X.trainList=X.training[[i]], y.train=y.training[[i]],
       alphaList, lambdaList, family = family,
-      X.testList=X.test[[i]], Y.test=Y.test[[i]], filter, topranked, keepVarList)
+      X.testList=X.test[[i]], y.test=y.test[[i]], filter, topranked, keepVarList)
     # combine predictions using average probability
     avgProbList[[i]] <- do.call(cbind, lapply(result$testPerf,
       function(i) {
@@ -233,14 +254,14 @@ ensembleCV = function (X.trainList, Y.train, alphaList, lambdaList, family, filt
 
   probs <- unlist(avgProbList)
   ## Error and AUROC
-  predictResponse <- rep(levels(Y.train)[1], length(probs))
-  predictResponse[probs >= 0.5] <- levels(Y.train)[2]
+  predictResponse <- rep(levels(y.train)[1], length(probs))
+  predictResponse[probs >= 0.5] <- levels(y.train)[2]
 
   ## compute error rate
-  truth <- sapply(strsplit(names(unlist(Y.test)), "\\."), function(i) i[2])
+  truth <- sapply(strsplit(names(unlist(y.test)), "\\."), function(i) i[2])
   if(!all(names(probs) == truth))
     stop("predicted probability is not in the same order as the test labels")
-  mat <- table(pred=factor(as.character(predictResponse), levels = levels(Y.train)), truth=unlist(Y.test))
+  mat <- table(pred=factor(as.character(predictResponse), levels = levels(y.train)), truth=unlist(y.test))
   mat2 <- mat
   diag(mat2) <- 0
   classError <- colSums(mat2)/colSums(mat)
@@ -251,8 +272,8 @@ ensembleCV = function (X.trainList, Y.train, alphaList, lambdaList, family, filt
   colnames(error) <- "Error_0.5"
 
   ## compute AUROC
-  if(nlevels(Y.train) == 2){
-    perfTest <- amritr::tperformance(weights = probs, trueLabels = unlist(Y.test)) %>% as.matrix
+  if(nlevels(y.train) == 2){
+    perfTest <- amritr::tperformance(weights = probs, trueLabels = unlist(y.test)) %>% as.matrix
     colnames(perfTest) <- "perf"
   } else {
     perfTest <- NA
