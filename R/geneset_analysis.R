@@ -36,15 +36,15 @@ filtered$Type <- "filtered"
 
 ## print percentage of mapping and unmapped identifiers in the unfiltered genelist
 cat(paste0("% of mapped identifiers in unfiltered genesets = ",
-  100*round(length(intersect(genelist, unlist(genesets)))/length(genelist)), "%"), fill = TRUE)
+  100*round(length(intersect(genelist, unlist(genesets)))/length(genelist), 2), "%"), fill = TRUE)
 cat(paste0("% of unmapped identifiers in unfiltered genesets = ",
-  100*round(length(setdiff(genelist, unlist(genesets)))/length(genelist)), "%"), fill = TRUE)
+  100*round(length(setdiff(genelist, unlist(genesets)))/length(genelist), 2), "%"), fill = TRUE)
 
 ## print percentage of overlapping and non-overlapping identifiers in the background set
 cat(paste0("% of mapped identifiers in the background set = ",
-  100*round(length(intersect(universe, unlist(genesets)))/length(universe)), "%"), fill = TRUE)
+  100*round(length(intersect(universe, unlist(genesets)))/length(universe), 2), "%"), fill = TRUE)
 cat(paste0("% of unmapped identifiers in the background set = ",
-  100*round(length(setdiff(universe, unlist(genesets)))/length(universe)), "%"), fill = TRUE)
+  100*round(length(setdiff(universe, unlist(genesets)))/length(universe), 2), "%"), fill = TRUE)
 
 rbind(unfiltered, filtered)
 }
