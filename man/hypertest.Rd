@@ -4,7 +4,7 @@
 \alias{hypertest}
 \title{hypergeometric Test}
 \usage{
-hypertest(genelist, genesets)
+hypertest(genelist, genesets, cpus)
 }
 \arguments{
 \item{genelist}{vector of gene symbols}

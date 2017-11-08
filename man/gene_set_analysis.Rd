@@ -4,12 +4,13 @@
 \alias{gene_set_analysis}
 \title{Gene Set Analysis (GSA)}
 \usage{
-gene_set_analysis(genelist, genesets, universe)
+gene_set_analysis(genes, genesets, study_universe, alpha, topranked = 5,
+  min.set.size = 1)
 }
 \arguments{
-\item{genelist}{vector of gene symbols}
-
 \item{genesets}{list of gene sets}
+
+\item{genelist}{vector of gene symbols}
 
 \item{universe}{background list of genes: all the genes used in the study}
 }
