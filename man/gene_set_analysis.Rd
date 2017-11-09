@@ -4,8 +4,7 @@
 \alias{gene_set_analysis}
 \title{Gene Set Analysis (GSA)}
 \usage{
-gene_set_analysis(genes, genesets, study_universe, alpha, topranked = 5,
-  min.set.size = 1)
+gene_set_analysis(genes, genesets, study_universe, min.set.size = 1)
 }
 \arguments{
 \item{genesets}{list of gene sets}
@@ -25,16 +24,33 @@ This function uses the hypergeometric function to test for over-representation o
 }
 \examples{
 
+library(dplyr)
 data(pathways)
-
-# genelist and KEGG pathways (gene sets)
+# gene list supplied by the user
 set.seed(1)
-genelist <- sample(unlist(unlist(kegg)), 50)
+genelist <- pathways \%>\%
+ filter(Database == "KEGG") \%>\%
+ dplyr::select(Genes) \%>\%
+ unlist \%>\%
+ as.character \%>\%
+ sample(., 50)
+
 set.seed(2)
-universe <- unique(c(genelist, sample(unlist(unlist(kegg)), 300)))
+universe <- pathways \%>\%
+ filter(Database == "KEGG") \%>\%
+ dplyr::select(Genes) \%>\%
+ unlist \%>\%
+ as.character \%>\%
+ sample(., 50) \%>\%
+ c(., genelist) \%>\%
+ unique
 
 # Perform gene set enrichment analysis
-result <- gene_set_analysis(genelist, genesets, universe)
+result <- gene_set_analysis(genes = genelist,
+ genesets = pathways,
+ study_universe = universe,
+ min.set.size = 1)
 
-result \%>\% group_by(Type) \%>\% slice(1:5)
+result$toptable \%>\% group_by(Type, Database) \%>\% slice(1:5)
+
 }
