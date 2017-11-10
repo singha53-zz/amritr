@@ -75,6 +75,7 @@ gene_set_analysis = function(genes, genesets, study_universe, min.set.size = 1){
   genesets$universe <- genesets$Genes %>% unlist %>% unique %>% length
 
   filtered <- genesets %>%
+    dplyr::rowwise(.) %>%
     dplyr::mutate(n_genes = length(genes),
       overlap = length(intersect(genes, Genes)),
       p_value = phyper(overlap - 1, n_genes,
