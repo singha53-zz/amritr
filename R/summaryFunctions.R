@@ -149,10 +149,10 @@ hypothesisTests = function(data, group){
     else {
       result <- apply(data, 2, function(i) {
         fit <- aov(i ~ classes)
-        sigTest <- data.frame(effectSize = fit$coefficients[2],
-          anova.Pval = summary(fit)[[1]][1, "Pr(>F)"], Kruskal.Pval = kruskal.test(i ~
-              classes)$p.value, Bartlett.Test = bartlett.test(i ~
-                  classes)$p.value, Breusch.Pagan.Test = bptest(fit)$p.value,
+        sigTest <- data.frame(anova.Pval = summary(fit)[[1]][1, "Pr(>F)"],
+          Kruskal.Pval = kruskal.test(i ~ classes)$p.value,
+          Bartlett.Test = bartlett.test(i ~ classes)$p.value,
+          Breusch.Pagan.Test = bptest(fit)$p.value,
           Shapiro.Test = shapiro.test(fit$residuals)$p.value)
         if (sigTest$Bartlett.Test < 0.05) {
           sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
