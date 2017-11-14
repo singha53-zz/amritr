@@ -150,7 +150,7 @@ hypothesisTests = function(data, group){
       result <- apply(data, 2, function(i) {
         fit <- aov(i ~ classes)
         sigTest <- data.frame(effectSize = fit$coefficients[2],
-          lm.Pval = summary(fit)[[1]][1, "Pr(>F)"], Kruskal.Pval = kruskal.test(i ~
+          anova.Pval = summary(fit)[[1]][1, "Pr(>F)"], Kruskal.Pval = kruskal.test(i ~
               classes)$p.value, Bartlett.Test = bartlett.test(i ~
                   classes)$p.value, Breusch.Pagan.Test = bptest(fit)$p.value,
           Shapiro.Test = shapiro.test(fit$residuals)$p.value)
@@ -175,13 +175,13 @@ hypothesisTests = function(data, group){
         assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
           "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
         if (sum(names(assumptions) %in% "Reject_Null")) {
-          sigTest$WhichTest <- "wilcoxon"
+          sigTest$WhichTest <- "Kruskal-Wallis"
         }
         else {
-          sigTest$WhichTest <- "lm"
+          sigTest$WhichTest <- "ANOVA"
         }
-        if (sigTest$WhichTest == "lm") {
-          if (sigTest$lm.Pval < 0.05) {
+        if (sigTest$WhichTest == "ANOVA") {
+          if (sigTest$anova.Pval < 0.05) {
             sigTest$Decision <- "Significant"
           }
           else {
@@ -221,3 +221,4 @@ hypothesisTests = function(data, group){
     cbind(summary, result[summary$Var, ])
   }
 }
+
