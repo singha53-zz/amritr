@@ -72,161 +72,151 @@ splitData = function(demo, group, trim = 0.8){
 #' @param group string stateting the column name of the grouping variable
 #' @export
 hypothesisTests = function(data, group){
-
   library("lmtest")
-  if(!is.factor(data[, group]))
+  if (!is.factor(data[, group]))
     stop("group variable must be a factor!")
-
   classes <- droplevels(data[, group])
-  if(nlevels(classes) < 2)
+  if (nlevels(classes) < 2)
     stop("at least 2 levels in the group variable are required")
-
   data <- data[, setdiff(colnames(data), group), drop = FALSE]
-
-  if(all(sapply(data, is.numeric))){
+  if (all(sapply(data, is.numeric))) {
     isCont = TRUE
-  } else {
+  }
+  else {
     isCont = FALSE
   }
-
-  if(isTRUE(isCont)){
-    ## Descriptive statistics
-    summary <- data %>%
-      dplyr::mutate(group = classes) %>%
-      tidyr::gather(Var, Value, -group) %>%
-      dplyr::group_by(group, Var) %>%
-      dplyr::summarize(Mean.SD = paste(c(round(mean(Value, na.rm = TRUE), 1),
-        round(sd(Value, na.rm = TRUE), 1)), collapse = "+/-")) %>%
-      tidyr::spread(group, Mean.SD) %>% as.data.frame
-
-    if(nlevels(classes) == 2){
-      result <- apply(data, 2, function(i){
-        ## Linear model
+  if (isTRUE(isCont)) {
+    summary <- data %>% dplyr::mutate(group = classes) %>%
+      tidyr::gather(Var, Value, -group) %>% dplyr::group_by(group,
+        Var) %>% dplyr::summarize(Mean.SD = paste(c(round(mean(Value,
+          na.rm = TRUE), 1), round(sd(Value, na.rm = TRUE),
+            1)), collapse = "+/-")) %>% tidyr::spread(group,
+              Mean.SD) %>% as.data.frame
+    if (nlevels(classes) == 2) {
+      result <- apply(data, 2, function(i) {
         fit <- lm(i ~ classes)
-
         sigTest <- data.frame(effectSize = fit$coefficients[2],
           lm.Pval = coef(summary(fit))[2, "Pr(>|t|)"],
           wilcoxon.Pval = wilcox.test(i[classes == levels(classes)[1]],
             i[classes == levels(classes)[2]])$p.value,
           Bartlett.Test = bartlett.test(i ~ classes)$p.value,
-          Breusch.Pagan.Test = bptest(fit)$p.value,
-          Shapiro.Test = shapiro.test(fit$residuals)$p.value)
-
-        ## Test linear model assumptions
-        if(sigTest$Bartlett.Test < 0.05){
+          Breusch.Pagan.Test = bptest(fit)$p.value, Shapiro.Test = shapiro.test(fit$residuals)$p.value)
+        if (sigTest$Bartlett.Test < 0.05) {
           sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
-        } else {
+        }
+        else {
           sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
         }
-        if(sigTest$Breusch.Pagan.Test < 0.05){
+        if (sigTest$Breusch.Pagan.Test < 0.05) {
           sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
-        } else {
+        }
+        else {
           sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
         }
-        if(sigTest$Shapiro.Test < 0.05){
+        if (sigTest$Shapiro.Test < 0.05) {
           sigTest$Shapiro.Test_HO_normal = "Reject_Null"
-        } else {
+        }
+        else {
           sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
         }
-
-        ## Which test to use?
-        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar", "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
-        if(sum(names(assumptions) %in% "Reject_Null")){
+        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
+          "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
+        if (sum(names(assumptions) %in% "Reject_Null")) {
           sigTest$WhichTest <- "wilcoxon"
-        } else {
+        }
+        else {
           sigTest$WhichTest <- "lm"
         }
-
-        ## Is the variable significant?
-        if(sigTest$WhichTest == "lm"){
-          if(sigTest$lm.Pval < 0.05){
+        if (sigTest$WhichTest == "lm") {
+          if (sigTest$lm.Pval < 0.05) {
             sigTest$Decision <- "Significant"
-          } else {
-            sigTest$Decision <- "Not_Significant"
           }
-        } else {
-          if(sigTest$wilcoxon.Pval < 0.05){
-            sigTest$Decision <- "Significant"
-          } else {
+          else {
             sigTest$Decision <- "Not_Significant"
           }
         }
-        sigTest
-      }) %>% do.call(rbind, .)
-
-    } else {
-      ## ANOVA
-      result <- apply(data, 2, function(i){
-        ## Linear model
-        fit <- aov(i ~ classes)
-
-        sigTest <- data.frame(effectSize = fit$coefficients[2],
-          lm.Pval = summary(fit)[[1]][1, "Pr(>F)"],
-          Kruskal.Pval = kruskal.test(i ~ classes)$p.value,
-          Bartlett.Test = bartlett.test(i ~ classes)$p.value,
-          Breusch.Pagan.Test = bptest(fit)$p.value,
-          Shapiro.Test = shapiro.test(fit$residuals)$p.value)
-
-        ## Test linear model assumptions
-        if(sigTest$Bartlett.Test < 0.05){
-          sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
-        } else {
-          sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if(sigTest$Breusch.Pagan.Test < 0.05){
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
-        } else {
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if(sigTest$Shapiro.Test < 0.05){
-          sigTest$Shapiro.Test_HO_normal = "Reject_Null"
-        } else {
-          sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
-        }
-
-        ## Which test to use?
-        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar", "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
-        if(sum(names(assumptions) %in% "Reject_Null")){
-          sigTest$WhichTest <- "wilcoxon"
-        } else {
-          sigTest$WhichTest <- "lm"
-        }
-
-        ## Is the variable significant?
-        if(sigTest$WhichTest == "lm"){
-          if(sigTest$lm.Pval < 0.05){
+        else {
+          if (sigTest$wilcoxon.Pval < 0.05) {
             sigTest$Decision <- "Significant"
-          } else {
-            sigTest$Decision <- "Not_Significant"
           }
-        } else {
-          if(sigTest$Kruskal.Pval < 0.05){
-            sigTest$Decision <- "Significant"
-          } else {
+          else {
             sigTest$Decision <- "Not_Significant"
           }
         }
         sigTest
       }) %>% do.call(rbind, .)
     }
-    cbind(summary, result[summary$Var, ]) %>%
-      arrange(effectSize)
-  } else {
-    result <- apply(data, 2, function(i){
-      sigTest <- data.frame(chisq.Pval = chisq.test(table(i, classes))$p.value)
-      if(sigTest$chisq.Pval < 0.05){
+    else {
+      result <- apply(data, 2, function(i) {
+        fit <- aov(i ~ classes)
+        sigTest <- data.frame(effectSize = fit$coefficients[2],
+          lm.Pval = summary(fit)[[1]][1, "Pr(>F)"], Kruskal.Pval = kruskal.test(i ~
+              classes)$p.value, Bartlett.Test = bartlett.test(i ~
+                  classes)$p.value, Breusch.Pagan.Test = bptest(fit)$p.value,
+          Shapiro.Test = shapiro.test(fit$residuals)$p.value)
+        if (sigTest$Bartlett.Test < 0.05) {
+          sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
+        }
+        else {
+          sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
+        }
+        if (sigTest$Breusch.Pagan.Test < 0.05) {
+          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
+        }
+        else {
+          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
+        }
+        if (sigTest$Shapiro.Test < 0.05) {
+          sigTest$Shapiro.Test_HO_normal = "Reject_Null"
+        }
+        else {
+          sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
+        }
+        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
+          "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
+        if (sum(names(assumptions) %in% "Reject_Null")) {
+          sigTest$WhichTest <- "wilcoxon"
+        }
+        else {
+          sigTest$WhichTest <- "lm"
+        }
+        if (sigTest$WhichTest == "lm") {
+          if (sigTest$lm.Pval < 0.05) {
+            sigTest$Decision <- "Significant"
+          }
+          else {
+            sigTest$Decision <- "Not_Significant"
+          }
+        }
+        else {
+          if (sigTest$Kruskal.Pval < 0.05) {
+            sigTest$Decision <- "Significant"
+          }
+          else {
+            sigTest$Decision <- "Not_Significant"
+          }
+        }
+        sigTest
+      }) %>% do.call(rbind, .)
+    }
+    cbind(summary, result[summary$Var, ]) %>% arrange(effectSize)
+  }
+  else {
+    result <- apply(data, 2, function(i) {
+      sigTest <- data.frame(chisq.Pval = chisq.test(table(i,
+        classes))$p.value)
+      if (sigTest$chisq.Pval < 0.05) {
         sigTest$Decision <- "Significant"
-      } else {
+      }
+      else {
         sigTest$Decision <- "Not_Significant"
       }
       sigTest
     }) %>% do.call(rbind, .)
-
-    summary <- data %>%
-      dplyr::mutate(group = classes) %>%
-      tidyr::gather(Var, lvl, -group) %>%
-      dplyr::group_by(Var, group) %>%
-      dplyr::summarise(lvl = paste(paste(names(table(lvl)), table(lvl), sep="_"), collapse = "/")) %>%
+    summary <- data %>% dplyr::mutate(group = classes) %>%
+      tidyr::gather(Var, lvl, -group) %>% dplyr::group_by(Var,
+        group) %>% dplyr::summarise(lvl = paste(paste(names(table(lvl)),
+          round(100*table(lvl)/sum(table(lvl)), 1), sep = "_"), collapse = "/")) %>%
       tidyr::spread(group, lvl) %>% as.data.frame
     cbind(summary, result[summary$Var, ])
   }
