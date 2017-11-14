@@ -199,7 +199,7 @@ hypothesisTests = function(data, group){
         sigTest
       }) %>% do.call(rbind, .)
     }
-    cbind(summary, result[summary$Var, ]) %>% arrange(effectSize)
+    cbind(summary, result[summary$Var, ])
   }
   else {
     result <- apply(data, 2, function(i) {
