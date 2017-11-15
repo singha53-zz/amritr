@@ -71,7 +71,7 @@ splitData = function(demo, group, trim = 0.8){
 #' @param data input dataset
 #' @param group string stateting the column name of the grouping variable
 #' @export
-hypothesisTests = function(data, group){
+hypothesisTests = function (data, group){
   library("lmtest")
   if (!is.factor(data[, group]))
     stop("group variable must be a factor!")
@@ -81,8 +81,7 @@ hypothesisTests = function(data, group){
   data <- data[, setdiff(colnames(data), group), drop = FALSE]
   if (all(sapply(data, is.numeric))) {
     isCont = TRUE
-  }
-  else {
+  } else {
     isCont = FALSE
   }
   if (isTRUE(isCont)) {
@@ -95,12 +94,12 @@ hypothesisTests = function(data, group){
     if (nlevels(classes) == 2) {
       result <- apply(data, 2, function(i) {
         fit <- lm(i ~ classes)
-        sigTest <- data.frame(effectSize = fit$coefficients[2],
-          lm.Pval = coef(summary(fit))[2, "Pr(>|t|)"],
-          wilcoxon.Pval = wilcox.test(i[classes == levels(classes)[1]],
+        sigTest <- signif(data.frame(lm = coef(summary(fit))[2, "Pr(>|t|)"],
+          wilcoxon = wilcox.test(i[classes == levels(classes)[1]],
             i[classes == levels(classes)[2]])$p.value,
           Bartlett.Test = bartlett.test(i ~ classes)$p.value,
-          Breusch.Pagan.Test = bptest(fit)$p.value, Shapiro.Test = shapiro.test(fit$residuals)$p.value)
+          Breusch.Pagan.Test = bptest(fit)$p.value,
+          Shapiro.Test = shapiro.test(fit$residuals)$p.value), 2)
         if (sigTest$Bartlett.Test < 0.05) {
           sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
         }
@@ -128,7 +127,7 @@ hypothesisTests = function(data, group){
           sigTest$WhichTest <- "lm"
         }
         if (sigTest$WhichTest == "lm") {
-          if (sigTest$lm.Pval < 0.05) {
+          if (sigTest$lm < 0.05) {
             sigTest$Decision <- "Significant"
           }
           else {
@@ -136,7 +135,7 @@ hypothesisTests = function(data, group){
           }
         }
         else {
-          if (sigTest$wilcoxon.Pval < 0.05) {
+          if (sigTest$wilcoxon < 0.05) {
             sigTest$Decision <- "Significant"
           }
           else {
@@ -145,67 +144,72 @@ hypothesisTests = function(data, group){
         }
         sigTest
       }) %>% do.call(rbind, .)
-    }
-    else {
+
+      cbind(summary, result[summary$Var, ]) %>%
+        gather(test, p.value, lm:wilcoxon) %>%
+        filter(WhichTest == test) %>%
+        dplyr::select(-c(Bartlett.Test:Shapiro.Test, WhichTest)) %>%
+        arrange(Decision)
+
+    } else {
       result <- apply(data, 2, function(i) {
         fit <- aov(i ~ classes)
-        sigTest <- data.frame(anova.Pval = summary(fit)[[1]][1, "Pr(>F)"],
-          Kruskal.Pval = kruskal.test(i ~ classes)$p.value,
-          Bartlett.Test = bartlett.test(i ~ classes)$p.value,
-          Breusch.Pagan.Test = bptest(fit)$p.value,
-          Shapiro.Test = shapiro.test(fit$residuals)$p.value)
+        sigTest <- signif(data.frame(ANOVA = summary(fit)[[1]][1,
+          "Pr(>F)"], `Kruskal.Wallis` = kruskal.test(i ~
+              classes)$p.value, Bartlett.Test = bartlett.test(i ~
+                  classes)$p.value, Breusch.Pagan.Test = bptest(fit)$p.value,
+          Shapiro.Test = shapiro.test(fit$residuals)$p.value), 2)
         if (sigTest$Bartlett.Test < 0.05) {
           sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
-        }
-        else {
+        } else {
           sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
         }
         if (sigTest$Breusch.Pagan.Test < 0.05) {
           sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
-        }
-        else {
+        } else {
           sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
         }
         if (sigTest$Shapiro.Test < 0.05) {
           sigTest$Shapiro.Test_HO_normal = "Reject_Null"
-        }
-        else {
+        } else {
           sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
         }
         assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
           "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
         if (sum(names(assumptions) %in% "Reject_Null")) {
-          sigTest$WhichTest <- "Kruskal-Wallis"
-        }
-        else {
+          sigTest$WhichTest <- "Kruskal.Wallis"
+        } else {
           sigTest$WhichTest <- "ANOVA"
         }
         if (sigTest$WhichTest == "ANOVA") {
-          if (sigTest$anova.Pval < 0.05) {
+          if (sigTest$ANOVA < 0.05) {
             sigTest$Decision <- "Significant"
-          }
-          else {
+          } else {
             sigTest$Decision <- "Not_Significant"
           }
-        }
-        else {
-          if (sigTest$Kruskal.Pval < 0.05) {
+        } else {
+          if (sigTest$Kruskal.Wallis < 0.05) {
             sigTest$Decision <- "Significant"
-          }
-          else {
+          } else {
             sigTest$Decision <- "Not_Significant"
           }
         }
         sigTest
       }) %>% do.call(rbind, .)
+
+      cbind(summary, result[summary$Var, ]) %>%
+        gather(test, p.value, ANOVA:Kruskal.Wallis) %>%
+        filter(WhichTest == test) %>%
+        dplyr::select(-c(Bartlett.Test:Shapiro.Test, WhichTest)) %>%
+        arrange(Decision)
+
     }
-    cbind(summary, result[summary$Var, ])
   }
   else {
     result <- apply(data, 2, function(i) {
-      sigTest <- data.frame(chisq.Pval = chisq.test(table(i,
+      sigTest <- data.frame(chisq = chisq.test(table(i,
         classes))$p.value)
-      if (sigTest$chisq.Pval < 0.05) {
+      if (sigTest$chisq < 0.05) {
         sigTest$Decision <- "Significant"
       }
       else {
@@ -216,9 +220,9 @@ hypothesisTests = function(data, group){
     summary <- data %>% dplyr::mutate(group = classes) %>%
       tidyr::gather(Var, lvl, -group) %>% dplyr::group_by(Var,
         group) %>% dplyr::summarise(lvl = paste(paste(names(table(lvl)),
-          round(100*table(lvl)/sum(table(lvl)), 1), sep = "_"), collapse = "/")) %>%
-      tidyr::spread(group, lvl) %>% as.data.frame
+          round(100 * table(lvl)/sum(table(lvl)), 1), sep = "_"),
+          collapse = "/")) %>% tidyr::spread(group, lvl) %>%
+      as.data.frame
     cbind(summary, result[summary$Var, ])
   }
 }
-
