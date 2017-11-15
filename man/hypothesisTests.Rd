@@ -4,13 +4,16 @@
 \alias{hypothesisTests}
 \title{perform hypothesis test based on variable type}
 \usage{
-hypothesisTests(data, group)
+hypothesisTests(data, group, details = FALSE)
 }
 \arguments{
-\item{data}{input dataset}
+\item{data}{input dataset (all variables of a given dataset must be of the same type)}
 
-\item{group}{string stateting the column name of the grouping variable}
+\item{group}{string stating the column name of the grouping variable}
 }
 \description{
 perform hypothesis test based on variable type
+}
+\details{
+This function performs either a parametric (linear model) or non-parametric test (Wilcoxon or Kruskal-Wallis) for continuous data, or the Chi-Square test for categorical variables. The diagnostic assumptions of linear models are assessed using global statistic that assessing the four assumptions of linear models (skewness, kurtosis, link function, homoscadasticity (based on a test for heteroscadasticity)) based on the gvlma R-library, \url{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2820257/}).
 }

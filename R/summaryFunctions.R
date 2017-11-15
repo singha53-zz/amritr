@@ -68,10 +68,12 @@ splitData = function(demo, group, trim = 0.8){
 
 #' perform hypothesis test based on variable type
 #'
-#' @param data input dataset
-#' @param group string stateting the column name of the grouping variable
+#' @param data input dataset (all variables of a given dataset must be of the same type)
+#' @param group string stating the column name of the grouping variable
+#' @details
+#' This function performs either a parametric (linear model) or non-parametric test (Wilcoxon or Kruskal-Wallis) for continuous data, or the Chi-Square test for categorical variables. The diagnostic assumptions of linear models are assessed using global statistic that assessing the four assumptions of linear models (skewness, kurtosis, link function, homoscadasticity (based on a test for heteroscadasticity)) based on the gvlma R-library, \url{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2820257/}).
 #' @export
-hypothesisTests = function (data, group){
+hypothesisTests = function (data, group, details = FALSE){
   library("lmtest")
   if (!is.factor(data[, group]))
     stop("group variable must be a factor!")
@@ -85,134 +87,56 @@ hypothesisTests = function (data, group){
     isCont = FALSE
   }
   if (isTRUE(isCont)) {
-    summary <- data %>% dplyr::mutate(group = classes) %>%
-      tidyr::gather(Var, Value, -group) %>% dplyr::group_by(group,
-        Var) %>% dplyr::summarize(Mean.SD = paste(c(round(mean(Value,
+    ## Check linear model assumptions
+    diagnostics = data %>%
+      dplyr::mutate(group = classes) %>%
+      tidyr::gather(Var, Value, -group) %>%
+      dplyr::group_by(Var) %>%
+      nest() %>%
+      dplyr::mutate(assumptions = purrr::map(data, ~{
+        fit <- lm(Value ~ group, data = .)
+        assumptions <- gvlma::gvlma(fit)
+        assumptions <- assumptions$GlobalTest[2:6] %>%
+          do.call(rbind, .) %>%
+          as.data.frame %>%
+          mutate(Test = c("Global Stat", "Skewness", "Kurtosis", "Link Function", "Heteroscedasticity"),
+            lmDiagnostics = ifelse(pvalue < 0.05, "Assumptions NOT satisfied!", "Assumptions acceptable."))
+        assumptions$Parametric <- paste("lm", signif(pf(summary(fit)$fstatistic[1],
+          summary(fit)$fstatistic[2],
+          summary(fit)$fstatistic[3],lower.tail=FALSE), 2), sep="_")
+        if(nlevels(classes) == 2){
+          assumptions$NonParametric <- paste("wilcoxon", signif(wilcox.test(Value ~ group, data = .)$p.value, 2), sep="_")
+        } else {
+          assumptions$NonParametric <- paste("Kruskal.Wallis", signif(kruskal.test(Value ~ group, data = .)$p.value, 2), sep="_")
+        }
+        assumptions
+      })) %>%
+      dplyr::mutate(summary = purrr::map(data, ~{
+        group_by(., group) %>% dplyr::summarize(Mean.SD = paste(c(round(mean(Value,
           na.rm = TRUE), 1), round(sd(Value, na.rm = TRUE),
-            1)), collapse = "+/-")) %>% tidyr::spread(group,
-              Mean.SD) %>% as.data.frame
-    if (nlevels(classes) == 2) {
-      result <- apply(data, 2, function(i) {
-        fit <- lm(i ~ classes)
-        sigTest <- signif(data.frame(lm = coef(summary(fit))[2, "Pr(>|t|)"],
-          wilcoxon = wilcox.test(i[classes == levels(classes)[1]],
-            i[classes == levels(classes)[2]])$p.value,
-          Bartlett.Test = bartlett.test(i ~ classes)$p.value,
-          Breusch.Pagan.Test = bptest(fit)$p.value,
-          Shapiro.Test = shapiro.test(fit$residuals)$p.value), 2)
-        if (sigTest$Bartlett.Test < 0.05) {
-          sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
-        }
-        else {
-          sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if (sigTest$Breusch.Pagan.Test < 0.05) {
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
-        }
-        else {
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if (sigTest$Shapiro.Test < 0.05) {
-          sigTest$Shapiro.Test_HO_normal = "Reject_Null"
-        }
-        else {
-          sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
-        }
-        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
-          "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
-        if (sum(names(assumptions) %in% "Reject_Null")) {
-          sigTest$WhichTest <- "wilcoxon"
-        }
-        else {
-          sigTest$WhichTest <- "lm"
-        }
-        if (sigTest$WhichTest == "lm") {
-          if (sigTest$lm < 0.05) {
-            sigTest$Decision <- "Significant"
-          }
-          else {
-            sigTest$Decision <- "Not_Significant"
-          }
-        }
-        else {
-          if (sigTest$wilcoxon < 0.05) {
-            sigTest$Decision <- "Significant"
-          }
-          else {
-            sigTest$Decision <- "Not_Significant"
-          }
-        }
-        sigTest
-      }) %>% do.call(rbind, .)
+            1)), collapse = "+/-")) %>%
+          tidyr::spread(group, Mean.SD)
+      })) %>%
+      unnest(summary) %>% unnest(assumptions) %>% unnest() %>%
+      dplyr::select(-c(Value, pvalue, Decision)) %>%
+      gather(TestType, Pval, Parametric:NonParametric) %>%
+      separate(Pval, c("Method", "p.value"), "_")
 
-      cbind(summary, result[summary$Var, ]) %>%
-        gather(test, p.value, lm:wilcoxon) %>%
-        filter(WhichTest == test) %>%
-        dplyr::select(-c(Bartlett.Test:Shapiro.Test, WhichTest)) %>%
-        arrange(Decision)
-
+    ## based on diagnostic run parameteric or non-parametric test
+    if(details){
+      diagnostics
     } else {
-      result <- apply(data, 2, function(i) {
-        fit <- aov(i ~ classes)
-        sigTest <- signif(data.frame(ANOVA = summary(fit)[[1]][1,
-          "Pr(>F)"], `Kruskal.Wallis` = kruskal.test(i ~
-              classes)$p.value, Bartlett.Test = bartlett.test(i ~
-                  classes)$p.value, Breusch.Pagan.Test = bptest(fit)$p.value,
-          Shapiro.Test = shapiro.test(fit$residuals)$p.value), 2)
-        if (sigTest$Bartlett.Test < 0.05) {
-          sigTest$Bartlett.Test_HO_ConstantVar = "Reject_Null"
-        } else {
-          sigTest$Bartlett.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if (sigTest$Breusch.Pagan.Test < 0.05) {
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Reject_Null"
-        } else {
-          sigTest$Breusch.Pagan.Test_HO_ConstantVar = "Dont_Reject_Null"
-        }
-        if (sigTest$Shapiro.Test < 0.05) {
-          sigTest$Shapiro.Test_HO_normal = "Reject_Null"
-        } else {
-          sigTest$Shapiro.Test_HO_normal = "Dont_Reject_Null"
-        }
-        assumptions <- table(as.character(sigTest[, c("Bartlett.Test_HO_ConstantVar",
-          "Breusch.Pagan.Test_HO_ConstantVar", "Shapiro.Test_HO_normal")]))
-        if (sum(names(assumptions) %in% "Reject_Null")) {
-          sigTest$WhichTest <- "Kruskal.Wallis"
-        } else {
-          sigTest$WhichTest <- "ANOVA"
-        }
-        if (sigTest$WhichTest == "ANOVA") {
-          if (sigTest$ANOVA < 0.05) {
-            sigTest$Decision <- "Significant"
-          } else {
-            sigTest$Decision <- "Not_Significant"
-          }
-        } else {
-          if (sigTest$Kruskal.Wallis < 0.05) {
-            sigTest$Decision <- "Significant"
-          } else {
-            sigTest$Decision <- "Not_Significant"
-          }
-        }
-        sigTest
-      }) %>% do.call(rbind, .)
-
-      cbind(summary, result[summary$Var, ]) %>%
-        gather(test, p.value, ANOVA:Kruskal.Wallis) %>%
-        filter(WhichTest == test) %>%
-        dplyr::select(-c(Bartlett.Test:Shapiro.Test, WhichTest)) %>%
-        arrange(Decision)
-
+      diagnostics %>% filter(Test == "Global Stat") %>%
+        group_by(Var) %>%
+        filter(lmDiagnostics == "Assumptions acceptable." & TestType == "Parametric" | lmDiagnostics == "Assumptions NOT satisfied!" & TestType == "NonParametric")
     }
-  }
-  else {
+  } else {
     result <- apply(data, 2, function(i) {
       sigTest <- data.frame(chisq = chisq.test(table(i,
         classes))$p.value)
       if (sigTest$chisq < 0.05) {
         sigTest$Decision <- "Significant"
-      }
-      else {
+      } else {
         sigTest$Decision <- "Not_Significant"
       }
       sigTest
