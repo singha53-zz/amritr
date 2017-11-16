@@ -120,16 +120,19 @@ hypothesisTests = function (data, group, details = FALSE){
       unnest(summary) %>% unnest(assumptions) %>% unnest() %>%
       dplyr::select(-c(Value, pvalue, Decision)) %>%
       gather(TestType, Pval, Parametric:NonParametric) %>%
-      separate(Pval, c("Method", "p.value"), "_")
+      separate(Pval, c("Method", "p.value"), "_") %>%
+      mutate(Decision = ifelse(as.numeric(p.value) < 0.05, "Significant", "Non-Significant"))
 
     ## based on diagnostic run parameteric or non-parametric test
     if(details){
-      diagnostics
+      split(diagnostics, diagnostics$Decision)
     } else {
-      diagnostics %>% filter(Test == "Global Stat") %>%
+      diagnostics <- diagnostics %>% filter(Test == "Global Stat") %>%
         group_by(Var) %>%
         filter(lmDiagnostics == "Assumptions acceptable." & TestType == "Parametric" | lmDiagnostics == "Assumptions NOT satisfied!" & TestType == "NonParametric")
+      split(diagnostics, diagnostics$Decision)
     }
+
   } else {
     result <- apply(data, 2, function(i) {
       sigTest <- data.frame(chisq = chisq.test(table(i,
@@ -147,6 +150,7 @@ hypothesisTests = function (data, group, details = FALSE){
           round(100 * table(lvl)/sum(table(lvl)), 1), sep = "_"),
           collapse = "/")) %>% tidyr::spread(group, lvl) %>%
       as.data.frame
-    cbind(summary, result[summary$Var, ])
+    diagnostics <- cbind(summary, result[summary$Var, ])
+    split(diagnostics, diagnostics$Decision)
   }
 }
