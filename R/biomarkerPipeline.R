@@ -56,11 +56,17 @@ biomarkerPipeline = function(X = X, Y = Y, topranked = 50, validation = "Mfold",
   })) %>% mutate(Panel = colnames(X), Genes = colnames(X)) %>% dplyr::select(Mean, SD, Panel, Genes)
 
   if(!is.null(pathways)){
+    ## change pathway datafrome to list
+    pathways <- lapply(split(pathways, pathways$Database), function(i){
+      lapply(split(i, i$Term), function(j){
+        j$Genes
+      })
+    })
     ## pathway biomarkers
     convertPathwayToDataFrame = function(X, pathway){
       library(dplyr)
       pathwayList <- lapply(pathway, function(i){
-        intersect(i, colnames(X))
+        intersect(unlist(i), colnames(X))
       })
       pathwayList <- pathwayList[unlist(lapply(pathwayList, length)) != 0]
       pathwayList <- lapply(pathwayList, function(j){
