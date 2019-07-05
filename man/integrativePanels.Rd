@@ -4,8 +4,8 @@
 \alias{integrativePanels}
 \title{integrativePanels()}
 \usage{
-integrativePanels(X.train, Y.train, X.test, Y.test, concat_alpha, concat_lambda,
-  single_alphaList, single_lambdaList, M, iter, threads)
+integrativePanels(X.train, Y.train, X.test, Y.test, concat_alpha,
+  concat_lambda, single_alphaList, single_lambdaList, M, iter, threads)
 }
 \arguments{
 \item{X.train}{list of nxp datasets of length k}

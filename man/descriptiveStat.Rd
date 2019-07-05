@@ -4,7 +4,8 @@
 \alias{descriptiveStat}
 \title{Calculate desriptive statistics for each group and compare with lm() or lme()}
 \usage{
-descriptiveStat(demo, groups, variables, paired = FALSE, pairing = NULL)
+descriptiveStat(demo, groups, variables, paired = FALSE,
+  pairing = NULL)
 }
 \arguments{
 \item{demo}{is an (nxp) dataset}

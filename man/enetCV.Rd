@@ -4,8 +4,8 @@
 \alias{enetCV}
 \title{interal function (enet cross-validation)}
 \usage{
-enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter, topranked,
-  keepVar)
+enetCV(X, Y, alpha, lambda, M, folds, progressBar, family, filter,
+  topranked, keepVar)
 }
 \arguments{
 \item{X}{nxp matrix - training dataset}

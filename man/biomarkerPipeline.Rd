@@ -4,9 +4,9 @@
 \alias{biomarkerPipeline}
 \title{biomarkerPipeline}
 \usage{
-biomarkerPipeline(X = X, Y = Y, topranked = 50, validation = "Mfold",
-  M = 5, iter = 1, threads = 1, progressBar = TRUE,
-  pathways = pathways)
+biomarkerPipeline(X = X, Y = Y, topranked = 50,
+  validation = "Mfold", M = 5, iter = 1, threads = 1,
+  progressBar = TRUE, pathways = pathways)
 }
 \arguments{
 \item{X}{nxp matrix - training dataset}

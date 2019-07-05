@@ -4,9 +4,9 @@
 \alias{ensembleEnet}
 \title{Build ensemble enet classification panel}
 \usage{
-ensembleEnet(X.trainList, y.train, alphaList, lambdaList, family = "binomial",
-  X.testList = NULL, y.test = NULL, filter = "none", topranked = 50,
-  keepVarList = NULL)
+ensembleEnet(X.trainList, y.train, alphaList, lambdaList,
+  family = "binomial", X.testList = NULL, y.test = NULL,
+  filter = "none", topranked = 50, keepVarList = NULL)
 }
 \arguments{
 \item{X.trainList}{- list of training datasets (nxpi); i number of elements}

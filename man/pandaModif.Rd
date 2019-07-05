@@ -4,8 +4,8 @@
 \alias{pandaModif}
 \title{run PANDA (calculate geneCoreg, regNet and co-operative matrices)}
 \usage{
-pandaModif(motif, expr = NULL, ppi = NULL, alpha = 0.1, hamming = 0.01,
-  iter = NA)
+pandaModif(motif, expr = NULL, ppi = NULL, alpha = 0.1,
+  hamming = 0.01, iter = NA)
 }
 \arguments{
 \item{motif}{3 column matrix, 1st column (regVar), 2nd column (gene), 3rd (weight)}

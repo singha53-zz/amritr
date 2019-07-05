@@ -5,7 +5,8 @@
 \title{Build ensemble random forest classification panel}
 \usage{
 ensembleRf(X.trainList, y.train, panelLength = 15, X.testList = NULL,
-  y.test = NULL, filter = "none", topranked = 50, keepVarList = NULL)
+  y.test = NULL, filter = "none", topranked = 50,
+  keepVarList = NULL)
 }
 \arguments{
 \item{X.trainList}{list of training datasets (nxpi); i number of elements}

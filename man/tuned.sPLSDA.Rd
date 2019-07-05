@@ -7,7 +7,8 @@
 tuned.sPLSDA(X.train, Y.train, keepXgrid, ncomp, X.test = X.test,
   Y.test = Y.test, filter = filter, topranked = topranked,
   validation = validation, M = M, iter = iter, threads = threads,
-  progressBar = progressBar, optimal = optimal, errorMethod = errorMethod)
+  progressBar = progressBar, optimal = optimal,
+  errorMethod = errorMethod)
 }
 \arguments{
 \item{keepXgrid}{sequence of integers (# of variables to select per component)}

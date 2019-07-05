@@ -4,8 +4,8 @@
 \alias{fast.dingo}
 \title{Perform DINGO}
 \usage{
-fast.dingo(dat, x, rhoarray = NULL, diff.score = T, B = 30, verbose = T,
-  threads = 4)
+fast.dingo(dat, x, rhoarray = NULL, diff.score = T, B = 30,
+  verbose = T, threads = 4)
 }
 \arguments{
 \item{dat}{nxp dataset}

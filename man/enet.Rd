@@ -4,8 +4,9 @@
 \alias{enet}
 \title{Elastic net classification panel}
 \usage{
-enet(X, Y, alpha, lambda = NULL, family, X.test = NULL, Y.test = NULL,
-  filter = "p.value", topranked = 50, keepVar = NULL)
+enet(X, Y, alpha, lambda = NULL, family, X.test = NULL,
+  Y.test = NULL, filter = "p.value", topranked = 50,
+  keepVar = NULL)
 }
 \arguments{
 \item{X}{nxp matrix - training dataset}
