@@ -45,7 +45,7 @@ CoreAlg <- function(X, y){
   }
 
   if(Sys.info()['sysname'] == 'Windows') out <- mclapply(1:svn_itor, res, mc.cores=1) else
-    out <- mclapply(1:svn_itor, res, mc.cores=svn_itor)
+    out <- parallel::mclapply(1:svn_itor, res, mc.cores=svn_itor)
 
   nusvm <- rep(0,svn_itor)
   corrv <- rep(0,svn_itor)
@@ -144,7 +144,7 @@ CIBERSORT <- function(sig_matrix, mixture_file, perm=0, QN=TRUE){
   if(QN == TRUE){
     tmpc <- colnames(Y)
     tmpr <- rownames(Y)
-    Y <- normalize.quantiles(Y)
+    Y <- preprocessCore::normalize.quantiles(Y)
     colnames(Y) <- tmpc
     rownames(Y) <- tmpr
   }
