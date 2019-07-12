@@ -20,4 +20,6 @@ Imports:
     tidyverse,
     randomForest,
     limma
+Remotes: 
+    bioc::3.9/mixOmics
 RoxygenNote: 6.1.1
