@@ -120,9 +120,6 @@ doPerm <- function(perm, X, Y){
 #' @param QN Perform quantile normalization or not (TRUE/FALSE)
 #' @export
 CIBERSORT <- function(sig_matrix, mixture_file, perm=0, QN=TRUE){
-  library(e1071)
-  library(parallel)
-  library(preprocessCore)
 
   #read in data
   X <- read.table(sig_matrix,header=T,sep="\t",row.names=1,check.names=F)
