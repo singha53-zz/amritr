@@ -40,7 +40,7 @@ CoreAlg <- function(X, y){
     if(i==1){nus <- 0.25}
     if(i==2){nus <- 0.5}
     if(i==3){nus <- 0.75}
-    model<-svm(X,y,type="nu-regression",kernel="linear",nu=nus,scale=F)
+    model<-e1071::svm(X,y,type="nu-regression",kernel="linear",nu=nus,scale=F)
     model
   }
 
