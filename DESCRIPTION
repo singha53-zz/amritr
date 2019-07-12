@@ -19,7 +19,8 @@ Imports:
     snow,
     tidyverse,
     randomForest,
-    limma
+    limma,
+    e1071
 Remotes: 
     bioc::3.9/mixOmics
 RoxygenNote: 6.1.1
