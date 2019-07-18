@@ -19,5 +19,10 @@ Imports:
     snow,
     tidyverse,
     randomForest,
-    limma
+    limma,
+    e1071,
+    preprocessCore
+Remotes: 
+    bioc::3.9/mixOmics,
+    bioc::3.9/preprocessCore
 RoxygenNote: 6.1.1

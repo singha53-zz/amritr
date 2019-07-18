@@ -40,12 +40,12 @@ CoreAlg <- function(X, y){
     if(i==1){nus <- 0.25}
     if(i==2){nus <- 0.5}
     if(i==3){nus <- 0.75}
-    model<-svm(X,y,type="nu-regression",kernel="linear",nu=nus,scale=F)
+    model<-e1071::svm(X,y,type="nu-regression",kernel="linear",nu=nus,scale=F)
     model
   }
 
-  if(Sys.info()['sysname'] == 'Windows') out <- mclapply(1:svn_itor, res, mc.cores=1) else
-    out <- mclapply(1:svn_itor, res, mc.cores=svn_itor)
+  if(Sys.info()['sysname'] == 'Windows') out <- parallel::mclapply(1:svn_itor, res, mc.cores=1) else
+    out <- parallel::mclapply(1:svn_itor, res, mc.cores=svn_itor)
 
   nusvm <- rep(0,svn_itor)
   corrv <- rep(0,svn_itor)
@@ -120,9 +120,6 @@ doPerm <- function(perm, X, Y){
 #' @param QN Perform quantile normalization or not (TRUE/FALSE)
 #' @export
 CIBERSORT <- function(sig_matrix, mixture_file, perm=0, QN=TRUE){
-  library(e1071)
-  library(parallel)
-  library(preprocessCore)
 
   #read in data
   X <- read.table(sig_matrix,header=T,sep="\t",row.names=1,check.names=F)
@@ -144,7 +141,7 @@ CIBERSORT <- function(sig_matrix, mixture_file, perm=0, QN=TRUE){
   if(QN == TRUE){
     tmpc <- colnames(Y)
     tmpr <- rownames(Y)
-    Y <- normalize.quantiles(Y)
+    Y <- preprocessCore::normalize.quantiles(Y)
     colnames(Y) <- tmpc
     rownames(Y) <- tmpr
   }
